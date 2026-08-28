@@ -55,7 +55,7 @@ async function getAssets() {
 }
 
 // netlify/functions/upload.js
-const { getOrCreateRelease, getAssets } = require('./_utils'); // 如果提取了工具，否则直接复制
+// const { getOrCreateRelease, getAssets } = require('./_utils'); // 如果提取了工具，否则直接复制
 
 exports.handler = async (event) => {
   if (event.httpMethod !== 'POST') {
