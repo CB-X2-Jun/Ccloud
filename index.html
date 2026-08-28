@@ -1188,11 +1188,11 @@
                     return;
                 }
                 const folderPath = currentPath === '/' ? `/${name}` : `${currentPath}/${name}`;
-                const keepPath = folderPath === '/' ? '.gitkeep' : `${folderPath.slice(1)}/.gitkeep`;
+                const keepPath = currentPath === '/' ? `${name}/.gitkeep` : `${currentPath.slice(1)}/${name}/.gitkeep`;
 
                 try {
                     // 空 base64 (空文件)
-                    const emptyBase64 = '';
+                    const emptyBase64 = btoa(' '); // 至少包含一个空格
                     await uploadFileViaFunction(keepPath, emptyBase64);
                     showToast(`文件夹 "${name}" 创建成功`, 'success');
                     newFolderDialog.classList.remove('active');
@@ -1247,49 +1247,54 @@
             //  预览
             // ============================================================
             async function handlePreview(path, name) {
-                try {
-                    // 从 allAssets 中找下载链接
-                    const asset = allAssets.find(a => a.name === path);
-                    if (!asset) {
-                        showToast('未找到文件', 'error');
-                        return;
-                    }
-                    const url = asset.download_url;
-                    const resp = await fetch(url);
-                    if (!resp.ok) throw new Error('获取内容失败');
-                    const content = await resp.text();
-
-                    const info = getFileType(name);
-                    const ext = getExtension(name);
-                    const isImage = ['jpg', 'jpeg', 'png', 'gif', 'svg', 'webp', 'bmp', 'ico'].includes(ext);
-
-                    previewTitle.innerHTML = `<i class="${info.icon}"></i> ${name}`;
-                    let bodyHtml = '';
-                    if (isImage) {
-                        // 直接使用图片 URL
-                        bodyHtml = `<img src="${url}" alt="${name}" />`;
-                    } else {
-                        bodyHtml = `<pre style="margin:0;font-family:inherit;white-space:pre-wrap;word-break:break-word;">${escapeHtml(content)}</pre>`;
-                    }
-                    previewBody.innerHTML = bodyHtml;
-                    previewModal.classList.add('active');
-                    // 保存当前预览路径供下载按钮使用
-                    previewModal.dataset.path = path;
-                } catch (err) {
-                    showToast('预览失败: ' + err.message, 'error');
+              try {
+                // 通过 Function 代理获取内容
+                const resp = await fetch(`${API_BASE}/preview?path=${encodeURIComponent(path)}`);
+                if (!resp.ok) {
+                  const err = await resp.json().catch(() => ({}));
+                  throw new Error(err.error || `预览失败 (${resp.status})`);
                 }
+                const data = await resp.json();
+                const content = data.content;
+            
+                const info = getFileType(name);
+                const ext = getExtension(name);
+                const isImage = ['jpg', 'jpeg', 'png', 'gif', 'svg', 'webp', 'bmp', 'ico'].includes(ext);
+            
+                previewTitle.innerHTML = `<i class="${info.icon}"></i> ${name}`;
+                let bodyHtml = '';
+                if (isImage) {
+                  // 图片直接使用下载链接显示（无需代理）
+                  const asset = allAssets.find(a => a.name === path);
+                  if (asset) {
+                    bodyHtml = `<img src="${asset.download_url}" alt="${name}" />`;
+                  } else {
+                    bodyHtml = `<div class="preview-fallback">无法获取图片链接</div>`;
+                  }
+                } else {
+                  bodyHtml = `<pre style="margin:0;font-family:inherit;white-space:pre-wrap;word-break:break-word;">${escapeHtml(content)}</pre>`;
+                }
+                previewBody.innerHTML = bodyHtml;
+                previewModal.classList.add('active');
+                previewModal.dataset.path = path;
+              } catch (err) {
+                showToast('预览失败: ' + err.message, 'error');
+              }
             }
-
             // ============================================================
             //  下载（直接使用下载链接）
             // ============================================================
             function handleDownload(url, name) {
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = name;
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
+              if (!url) {
+                showToast('下载链接无效', 'error');
+                return;
+              }
+              const a = document.createElement('a');
+              a.href = url;
+              a.download = name;
+              document.body.appendChild(a);
+              a.click();
+              document.body.removeChild(a);
             }
 
             // ============================================================
