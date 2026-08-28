@@ -1,70 +1,22 @@
 // netlify/functions/list.js
-const REPO_OWNER = process.env.REPO_OWNER || 'CB-X2-Jun';
-const REPO_NAME = process.env.REPO_NAME || 'Ccloud-files';
-const RELEASE_TAG = process.env.RELEASE_TAG || 'cloud-files';
-const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
+// 资产名为 base64url 编码的逻辑路径，这里解码后返回给前端。
+// 旧版直命名资产（无法解码）原样返回，保持兼容。
 
-const API_BASE = 'https://api.github.com';
-
-function getHeaders(additional = {}) {
-  return {
-    'Authorization': `token ${GITHUB_TOKEN}`,
-    'Accept': 'application/vnd.github.v3+json',
-    ...additional
-  };
-}
-
-async function getOrCreateRelease() {
-  const url = `${API_BASE}/repos/${REPO_OWNER}/${REPO_NAME}/releases/tags/${RELEASE_TAG}`;
-  let resp = await fetch(url, { headers: getHeaders() });
-  if (resp.ok) {
-    const data = await resp.json();
-    return data.id;
-  }
-  // 创建
-  const createUrl = `${API_BASE}/repos/${REPO_OWNER}/${REPO_NAME}/releases`;
-  const body = {
-    tag_name: RELEASE_TAG,
-    name: `Cloud Files (${RELEASE_TAG})`,
-    body: '自动创建，用于云盘存储',
-    draft: false,
-    prerelease: false
-  };
-  resp = await fetch(createUrl, {
-    method: 'POST',
-    headers: getHeaders({ 'Content-Type': 'application/json' }),
-    body: JSON.stringify(body)
-  });
-  if (!resp.ok) throw new Error('创建 Release 失败');
-  const data = await resp.json();
-  return data.id;
-}
-
-async function getAssets() {
-  const releaseId = await getOrCreateRelease();
-  const url = `${API_BASE}/repos/${REPO_OWNER}/${REPO_NAME}/releases/${releaseId}/assets`;
-  const resp = await fetch(url, { headers: getHeaders() });
-  if (!resp.ok) throw new Error('获取资产列表失败');
-  return resp.json();
-}
+const { getAssets, tryDecodePath, REPO_OWNER, REPO_NAME, RELEASE_TAG } = require('./_utils');
 
 exports.handler = async (event) => {
   try {
     const assets = await getAssets();
     const list = assets.map(a => {
-        let name = a.name;
-        if (name.startsWith('/')) name = name.slice(1);
-        try {
-            name = decodeURIComponent(name);
-        } catch (_) { /* 解码失败则保持原样 */ }
-        return {
-            name: name,
-            size: a.size,
-            download_url: a.browser_download_url || 
-                `https://github.com/${REPO_OWNER}/${REPO_NAME}/releases/download/${RELEASE_TAG}/${encodeURIComponent(a.name)}`
-        };
+      const decoded = tryDecodePath(a.name);
+      const display = decoded !== null ? decoded : String(a.name || '').replace(/^\//, '');
+      return {
+        name: display,           // 逻辑路径（文件夹结构包含在其中）
+        size: a.size,
+        download_url: a.browser_download_url ||
+          `https://github.com/${REPO_OWNER}/${REPO_NAME}/releases/download/${RELEASE_TAG}/${encodeURIComponent(a.name)}`
+      };
     });
-    // ✅ 加上 return 语句，返回正确的 HTTP 响应
     return {
       statusCode: 200,
       body: JSON.stringify({ items: list })

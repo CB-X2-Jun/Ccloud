@@ -104,10 +104,38 @@
             font-size: 14px;
         }
         .path-display .path-text {
+            display: flex;
+            align-items: center;
+            gap: 2px;
             overflow: hidden;
             text-overflow: ellipsis;
             font-family: "SF Mono", "Cascadia Code", monospace;
             font-size: 15px;
+            min-width: 0;
+        }
+        .path-display .crumb {
+            cursor: pointer;
+            padding: 2px 6px;
+            border-radius: 8px;
+            color: #57606a;
+            white-space: nowrap;
+            transition: background 0.12s, color 0.12s;
+        }
+        .path-display .crumb:hover {
+            color: #2d7aff;
+            background: #e1e6ec;
+        }
+        .path-display .crumb.current {
+            color: #1f2328;
+            font-weight: 600;
+            cursor: default;
+        }
+        .path-display .crumb.current:hover {
+            color: #1f2328;
+            background: transparent;
+        }
+        .path-display .crumb-sep {
+            color: #8d96a0;
         }
         .nav-actions {
             display: flex;
@@ -130,6 +158,13 @@
         }
         .nav-actions .btn:hover {
             background: #e1e6ec;
+        }
+        .nav-actions .btn:disabled {
+            opacity: 0.45;
+            cursor: not-allowed;
+        }
+        .nav-actions .btn:disabled:hover {
+            background: #f0f3f6;
         }
         .nav-actions .btn-primary {
             background: #2d7aff;
@@ -411,6 +446,23 @@
             display: block;
             margin: 0 auto;
         }
+        .modal-body video {
+            max-width: 100%;
+            border-radius: 8px;
+            display: block;
+            margin: 0 auto;
+        }
+        .modal-body .preview-fallback {
+            text-align: center;
+            color: #8d96a0;
+            padding: 36px 12px;
+        }
+        .modal-body .preview-fallback i {
+            font-size: 30px;
+            color: #d0d7de;
+            display: block;
+            margin-bottom: 10px;
+        }
         .modal-footer {
             padding: 14px 24px;
             border-top: 1px solid #eaeef2;
@@ -684,9 +736,10 @@
         <div class="nav-bar">
             <div class="path-display">
                 <i class="fas fa-folder-open"></i>
-                <span class="path-text" id="pathDisplay">/</span>
+                <div class="path-text" id="pathDisplay"></div>
             </div>
             <div class="nav-actions">
+                <button class="btn" id="upBtn" title="返回上级目录"><i class="fas fa-level-up-alt"></i> 上一级</button>
                 <button class="btn" id="refreshBtn"><i class="fas fa-rotate"></i> 刷新</button>
                 <button class="btn btn-primary" id="newFolderBtn"><i class="fas fa-folder-plus"></i> 新建文件夹</button>
             </div>
@@ -797,11 +850,79 @@
                 'lua': { name: 'Lua 脚本', icon: 'fa-regular fa-file-code', preview: true },
                 'r': { name: 'R 源码', icon: 'fa-regular fa-file-code', preview: true },
                 'sql': { name: 'SQL 查询', icon: 'fa-regular fa-database', preview: true },
+                'ps1': { name: 'PowerShell 脚本', icon: 'fa-regular fa-terminal', preview: true },
+                'bat': { name: '批处理脚本', icon: 'fa-regular fa-terminal', preview: true },
+                'cmd': { name: 'CMD 脚本', icon: 'fa-regular fa-terminal', preview: true },
                 'sh': { name: 'Shell 脚本', icon: 'fa-regular fa-terminal', preview: true },
                 'bash': { name: 'Bash 脚本', icon: 'fa-regular fa-terminal', preview: true },
                 'zsh': { name: 'Zsh 脚本', icon: 'fa-regular fa-terminal', preview: true },
-                'ps1': { name: 'PowerShell 脚本', icon: 'fa-regular fa-terminal', preview: true },
-                'pdf': { name: 'PDF 文档', icon: 'fa-regular fa-file-pdf', preview: false },
+                'fish': { name: 'Fish 脚本', icon: 'fa-regular fa-terminal', preview: true },
+                'cs': { name: 'C# 源码', icon: 'fa-regular fa-file-code', preview: true },
+                'fs': { name: 'F# 源码', icon: 'fa-regular fa-file-code', preview: true },
+                'vb': { name: 'VB 源码', icon: 'fa-regular fa-file-code', preview: true },
+                'asm': { name: '汇编源码', icon: 'fa-regular fa-file-code', preview: true },
+                's': { name: '汇编源码', icon: 'fa-regular fa-file-code', preview: true },
+                'm': { name: 'Obj-C 源码', icon: 'fa-regular fa-file-code', preview: true },
+                'mm': { name: 'Obj-C++ 源码', icon: 'fa-regular fa-file-code', preview: true },
+                'cc': { name: 'C++ 源码', icon: 'fa-regular fa-file-code', preview: true },
+                'hh': { name: 'C++ 头文件', icon: 'fa-regular fa-file-code', preview: true },
+                'pl': { name: 'Perl 脚本', icon: 'fa-regular fa-file-code', preview: true },
+                'pm': { name: 'Perl 模块', icon: 'fa-regular fa-file-code', preview: true },
+                'tcl': { name: 'Tcl 脚本', icon: 'fa-regular fa-file-code', preview: true },
+                'scala': { name: 'Scala 源码', icon: 'fa-regular fa-file-code', preview: true },
+                'groovy': { name: 'Groovy 源码', icon: 'fa-regular fa-file-code', preview: true },
+                'gradle': { name: 'Gradle 脚本', icon: 'fa-regular fa-file-code', preview: true },
+                'kts': { name: 'Kotlin 脚本', icon: 'fa-regular fa-file-code', preview: true },
+                'vue': { name: 'Vue 组件', icon: 'fa-brands fa-vuejs', preview: true },
+                'svelte': { name: 'Svelte 组件', icon: 'fa-regular fa-file-code', preview: true },
+                'erl': { name: 'Erlang 源码', icon: 'fa-regular fa-file-code', preview: true },
+                'ex': { name: 'Elixir 源码', icon: 'fa-regular fa-file-code', preview: true },
+                'exs': { name: 'Elixir 脚本', icon: 'fa-regular fa-file-code', preview: true },
+                'hs': { name: 'Haskell 源码', icon: 'fa-regular fa-file-code', preview: true },
+                'ml': { name: 'OCaml 源码', icon: 'fa-regular fa-file-code', preview: true },
+                'mli': { name: 'OCaml 接口', icon: 'fa-regular fa-file-code', preview: true },
+                'clj': { name: 'Clojure 源码', icon: 'fa-regular fa-file-code', preview: true },
+                'jl': { name: 'Julia 源码', icon: 'fa-regular fa-file-code', preview: true },
+                'nim': { name: 'Nim 源码', icon: 'fa-regular fa-file-code', preview: true },
+                'zig': { name: 'Zig 源码', icon: 'fa-regular fa-file-code', preview: true },
+                'd': { name: 'D 语言源码', icon: 'fa-regular fa-file-code', preview: true },
+                'pas': { name: 'Pascal 源码', icon: 'fa-regular fa-file-code', preview: true },
+                'pp': { name: 'Pascal 源码', icon: 'fa-regular fa-file-code', preview: true },
+                'f': { name: 'Fortran 源码', icon: 'fa-regular fa-file-code', preview: true },
+                'f90': { name: 'Fortran 源码', icon: 'fa-regular fa-file-code', preview: true },
+                'for': { name: 'Fortran 源码', icon: 'fa-regular fa-file-code', preview: true },
+                'adb': { name: 'Ada 源码', icon: 'fa-regular fa-file-code', preview: true },
+                'ads': { name: 'Ada 规格', icon: 'fa-regular fa-file-code', preview: true },
+                'rkt': { name: 'Racket 源码', icon: 'fa-regular fa-file-code', preview: true },
+                'scm': { name: 'Scheme 源码', icon: 'fa-regular fa-file-code', preview: true },
+                'coffee': { name: 'CoffeeScript', icon: 'fa-regular fa-file-code', preview: true },
+                'ipynb': { name: 'Jupyter 笔记本', icon: 'fa-regular fa-file-code', preview: true },
+                'tex': { name: 'LaTeX 文档', icon: 'fa-regular fa-file-code', preview: true },
+                'bib': { name: 'BibTeX 文献', icon: 'fa-regular fa-file-code', preview: true },
+                'graphql': { name: 'GraphQL', icon: 'fa-regular fa-file-code', preview: true },
+                'proto': { name: 'Protobuf', icon: 'fa-regular fa-file-code', preview: true },
+                'tf': { name: 'Terraform', icon: 'fa-regular fa-file-code', preview: true },
+                'hcl': { name: 'HCL 配置', icon: 'fa-regular fa-file-code', preview: true },
+                'nix': { name: 'Nix 表达式', icon: 'fa-regular fa-file-code', preview: true },
+                'ini': { name: 'INI 配置', icon: 'fa-regular fa-file-lines', preview: true },
+                'conf': { name: '配置文件', icon: 'fa-regular fa-file-lines', preview: true },
+                'cfg': { name: '配置文件', icon: 'fa-regular fa-file-lines', preview: true },
+                'env': { name: '环境变量', icon: 'fa-regular fa-file-lines', preview: true },
+                'properties': { name: '属性文件', icon: 'fa-regular fa-file-lines', preview: true },
+                'mk': { name: 'Makefile', icon: 'fa-regular fa-file-lines', preview: true },
+                'cmake': { name: 'CMake 脚本', icon: 'fa-regular fa-file-lines', preview: true },
+                'sln': { name: 'VS 解决方案', icon: 'fa-regular fa-file-lines', preview: true },
+                'vcxproj': { name: 'VS 项目', icon: 'fa-regular fa-file-lines', preview: true },
+                'csproj': { name: 'C# 项目', icon: 'fa-regular fa-file-lines', preview: true },
+                'lock': { name: '锁定文件', icon: 'fa-regular fa-file-lines', preview: true },
+                'mod': { name: '模块文件', icon: 'fa-regular fa-file-lines', preview: true },
+                'sum': { name: '校验文件', icon: 'fa-regular fa-file-lines', preview: true },
+                'eml': { name: '邮件文件', icon: 'fa-regular fa-envelope', preview: true },
+                'ics': { name: '日历文件', icon: 'fa-regular fa-calendar', preview: true },
+                'srt': { name: '字幕文件', icon: 'fa-regular fa-file-lines', preview: true },
+                'ass': { name: '字幕文件', icon: 'fa-regular fa-file-lines', preview: true },
+                'vtt': { name: 'WebVTT 字幕', icon: 'fa-regular fa-file-lines', preview: true },
+                'pdf': { name: 'PDF 文档', icon: 'fa-regular fa-file-pdf', preview: true },
                 'doc': { name: 'Word 文档', icon: 'fa-regular fa-file-word', preview: false },
                 'docx': { name: 'Word 文档', icon: 'fa-regular fa-file-word', preview: false },
                 'xls': { name: 'Excel 表格', icon: 'fa-regular fa-file-excel', preview: false },
@@ -810,44 +931,87 @@
                 'pptx': { name: 'PowerPoint 演示', icon: 'fa-regular fa-file-powerpoint', preview: false },
                 'jpg': { name: 'JPEG 图片', icon: 'fa-regular fa-file-image', preview: true },
                 'jpeg': { name: 'JPEG 图片', icon: 'fa-regular fa-file-image', preview: true },
+                'jpe': { name: 'JPEG 图片', icon: 'fa-regular fa-file-image', preview: true },
+                'jfif': { name: 'JPEG 图片', icon: 'fa-regular fa-file-image', preview: true },
                 'png': { name: 'PNG 图片', icon: 'fa-regular fa-file-image', preview: true },
                 'gif': { name: 'GIF 动画', icon: 'fa-regular fa-file-image', preview: true },
                 'svg': { name: 'SVG 矢量图', icon: 'fa-regular fa-file-image', preview: true },
                 'webp': { name: 'WebP 图片', icon: 'fa-regular fa-file-image', preview: true },
                 'bmp': { name: 'BMP 位图', icon: 'fa-regular fa-file-image', preview: true },
                 'ico': { name: '图标文件', icon: 'fa-regular fa-file-image', preview: true },
-                'mp3': { name: 'MP3 音频', icon: 'fa-regular fa-file-audio', preview: false },
-                'wav': { name: 'WAV 音频', icon: 'fa-regular fa-file-audio', preview: false },
-                'flac': { name: 'FLAC 音频', icon: 'fa-regular fa-file-audio', preview: false },
-                'aac': { name: 'AAC 音频', icon: 'fa-regular fa-file-audio', preview: false },
-                'ogg': { name: 'OGG 音频', icon: 'fa-regular fa-file-audio', preview: false },
-                'mp4': { name: 'MP4 视频', icon: 'fa-regular fa-file-video', preview: false },
-                'avi': { name: 'AVI 视频', icon: 'fa-regular fa-file-video', preview: false },
-                'mov': { name: 'MOV 视频', icon: 'fa-regular fa-file-video', preview: false },
-                'wmv': { name: 'WMV 视频', icon: 'fa-regular fa-file-video', preview: false },
-                'mkv': { name: 'MKV 视频', icon: 'fa-regular fa-file-video', preview: false },
-                'webm': { name: 'WebM 视频', icon: 'fa-regular fa-file-video', preview: false },
+                'tif': { name: 'TIFF 图片', icon: 'fa-regular fa-file-image', preview: true },
+                'tiff': { name: 'TIFF 图片', icon: 'fa-regular fa-file-image', preview: true },
+                'avif': { name: 'AVIF 图片', icon: 'fa-regular fa-file-image', preview: true },
+                'heic': { name: 'HEIC 图片', icon: 'fa-regular fa-file-image', preview: true },
+                'heif': { name: 'HEIF 图片', icon: 'fa-regular fa-file-image', preview: true },
+                'mp3': { name: 'MP3 音频', icon: 'fa-regular fa-file-audio', preview: true },
+                'wav': { name: 'WAV 音频', icon: 'fa-regular fa-file-audio', preview: true },
+                'flac': { name: 'FLAC 音频', icon: 'fa-regular fa-file-audio', preview: true },
+                'aac': { name: 'AAC 音频', icon: 'fa-regular fa-file-audio', preview: true },
+                'ogg': { name: 'OGG 音频', icon: 'fa-regular fa-file-audio', preview: true },
+                'm4a': { name: 'M4A 音频', icon: 'fa-regular fa-file-audio', preview: true },
+                'mp4': { name: 'MP4 视频', icon: 'fa-regular fa-file-video', preview: true },
+                'avi': { name: 'AVI 视频', icon: 'fa-regular fa-file-video', preview: true },
+                'mov': { name: 'MOV 视频', icon: 'fa-regular fa-file-video', preview: true },
+                'wmv': { name: 'WMV 视频', icon: 'fa-regular fa-file-video', preview: true },
+                'mkv': { name: 'MKV 视频', icon: 'fa-regular fa-file-video', preview: true },
+                'webm': { name: 'WebM 视频', icon: 'fa-regular fa-file-video', preview: true },
+                'flv': { name: 'FLV 视频', icon: 'fa-regular fa-file-video', preview: true },
+                'm4v': { name: 'M4V 视频', icon: 'fa-regular fa-file-video', preview: true },
                 'zip': { name: 'ZIP 压缩包', icon: 'fa-regular fa-file-zipper', preview: false },
                 'rar': { name: 'RAR 压缩包', icon: 'fa-regular fa-file-zipper', preview: false },
                 '7z': { name: '7-Zip 压缩包', icon: 'fa-regular fa-file-zipper', preview: false },
                 'tar': { name: 'TAR 归档', icon: 'fa-regular fa-file-zipper', preview: false },
                 'gz': { name: 'GZ 压缩', icon: 'fa-regular fa-file-zipper', preview: false },
                 'bz2': { name: 'BZ2 压缩', icon: 'fa-regular fa-file-zipper', preview: false },
+                'xz': { name: 'XZ 压缩', icon: 'fa-regular fa-file-zipper', preview: false },
+                'iso': { name: 'ISO 镜像', icon: 'fa-regular fa-file-zipper', preview: false },
+                'img': { name: '磁盘镜像', icon: 'fa-regular fa-file-zipper', preview: false },
                 'exe': { name: '应用程序', icon: 'fa-regular fa-file', preview: false },
                 'msi': { name: '安装包', icon: 'fa-regular fa-file', preview: false },
                 'app': { name: '应用程序', icon: 'fa-regular fa-file', preview: false },
+                'apk': { name: 'Android 安装包', icon: 'fa-brands fa-android', preview: false },
+                'ipa': { name: 'iOS 安装包', icon: 'fa-brands fa-apple', preview: false },
+                'jar': { name: 'Java 归档', icon: 'fa-regular fa-file-zipper', preview: false },
+                'war': { name: 'Java Web 归档', icon: 'fa-regular fa-file-zipper', preview: false },
+                'o': { name: '目标文件', icon: 'fa-regular fa-file', preview: false },
+                'obj': { name: '目标文件', icon: 'fa-regular fa-file', preview: false },
+                'a': { name: '静态库', icon: 'fa-regular fa-file', preview: false },
+                'so': { name: '共享库', icon: 'fa-regular fa-file', preview: false },
+                'dll': { name: '动态链接库', icon: 'fa-regular fa-file', preview: false },
+                'lib': { name: '库文件', icon: 'fa-regular fa-file', preview: false },
+                'dylib': { name: '动态库', icon: 'fa-regular fa-file', preview: false },
+                'class': { name: 'Java 字节码', icon: 'fa-regular fa-file', preview: false },
+                'ttf': { name: 'TrueType 字体', icon: 'fa-regular fa-font', preview: false },
+                'otf': { name: 'OpenType 字体', icon: 'fa-regular fa-font', preview: false },
+                'woff': { name: 'Web 字体', icon: 'fa-regular fa-font', preview: false },
+                'woff2': { name: 'Web 字体', icon: 'fa-regular fa-font', preview: false },
+                'eot': { name: 'EOT 字体', icon: 'fa-regular fa-font', preview: false },
+                'epub': { name: 'EPUB 电子书', icon: 'fa-regular fa-book', preview: false },
+                'mobi': { name: 'MOBI 电子书', icon: 'fa-regular fa-book', preview: false },
                 'dmg': { name: '磁盘镜像', icon: 'fa-regular fa-file', preview: false },
                 'deb': { name: 'Debian 包', icon: 'fa-regular fa-file', preview: false },
                 'rpm': { name: 'RPM 包', icon: 'fa-regular fa-file', preview: false },
                 'gitkeep': { name: '占位文件', icon: 'fa-regular fa-file', preview: false },
+                'keep': { name: '占位文件', icon: 'fa-regular fa-file', preview: false },
             };
             const UNKNOWN_TYPE = { name: '未知文件类型', icon: 'fa-regular fa-file', preview: true };
+
+            // 预览分类（按扩展名）
+            const IMAGE_EXTS = ['jpg', 'jpeg', 'jpe', 'jfif', 'png', 'gif', 'svg', 'webp', 'bmp', 'ico', 'tif', 'tiff', 'avif', 'heic', 'heif'];
+            const VIDEO_EXTS = ['mp4', 'webm', 'mov', 'mkv', 'm4v'];
+            const AUDIO_EXTS = ['mp3', 'wav', 'flac', 'aac', 'ogg', 'm4a'];
+            // 单文件体积上限（Netlify Function 请求/响应约 6MB，base64 后会膨胀 1/3）
+            const MAX_FILE_SIZE = 4 * 1024 * 1024;
 
             // ============================================================
             //  状态
             // ============================================================
             let currentPath = '/';
-            let allAssets = []; // 缓存所有资产 { name, size, download_url }
+            let allAssets = [];       // 缓存所有资产 { name(逻辑路径), size, download_url }
+            let currentItems = [];    // 当前目录渲染项（文件夹 + 文件）
+            let currentPreviewItem = null;
+            let previewObjectUrl = null;
 
             // DOM 引用
             const $ = (s) => document.querySelector(s);
@@ -855,6 +1019,7 @@
 
             const pathDisplay = $('#pathDisplay');
             const fileListEl = $('#fileList');
+            const upBtn = $('#upBtn');
             const refreshBtn = $('#refreshBtn');
             const newFolderBtn = $('#newFolderBtn');
             const dropZone = $('#dropZone');
@@ -999,39 +1164,88 @@
             }
 
             // ============================================================
+            //  面包屑导航 + 返回上级
+            // ============================================================
+            function renderBreadcrumb() {
+                pathDisplay.innerHTML = '';
+                const home = document.createElement('span');
+                const homeIcon = document.createElement('i');
+                homeIcon.className = 'fas fa-home';
+                home.appendChild(homeIcon);
+                if (currentPath === '/') {
+                    home.className = 'crumb current';
+                    home.appendChild(document.createTextNode(' 全部文件'));
+                } else {
+                    home.className = 'crumb';
+                    home.title = '返回主目录';
+                    home.addEventListener('click', () => navigateTo('/'));
+                }
+                pathDisplay.appendChild(home);
+
+                let acc = '';
+                const parts = currentPath === '/' ? [] : currentPath.slice(1).split('/');
+                parts.forEach((part, i) => {
+                    acc += '/' + part;
+                    const sep = document.createElement('span');
+                    sep.className = 'crumb-sep';
+                    sep.textContent = '/';
+                    pathDisplay.appendChild(sep);
+
+                    const crumb = document.createElement('span');
+                    const isLast = (i === parts.length - 1);
+                    crumb.className = 'crumb' + (isLast ? ' current' : '');
+                    crumb.textContent = part;
+                    if (!isLast) {
+                        const target = acc;
+                        crumb.title = '返回 ' + target;
+                        crumb.addEventListener('click', () => navigateTo(target));
+                    }
+                    pathDisplay.appendChild(crumb);
+                });
+                upBtn.disabled = (currentPath === '/');
+            }
+
+            // ============================================================
             //  核心：加载目录（基于缓存 allAssets）
             // ============================================================
             async function loadDirectory(path) {
                 const cleanPath = sanitizePath(path);
                 currentPath = cleanPath;
-                pathDisplay.textContent = cleanPath;
-            
+                renderBreadcrumb();
+
                 try {
                     allAssets = await fetchList();
                     const prefix = cleanPath === '/' ? '' : cleanPath.slice(1) + '/';
                     const foldersSet = new Set();
                     const children = [];
-            
+
                     for (const asset of allAssets) {
-                        const name = asset.name;
+                        const name = asset.name; // 逻辑路径（list.js 已解码）
                         if (!name.startsWith(prefix)) continue;
                         const relative = name.slice(prefix.length);
                         if (!relative) continue;
-            
-                        // 检查是否是 .gitkeep 文件
-                        if (relative.endsWith('.gitkeep')) {
-                            // 提取文件夹路径
-                            const folderPath = relative.replace('/.gitkeep', '');
+
+                        // 当前目录自身的占位文件
+                        if (relative === '.keep' || relative === '.gitkeep') continue;
+
+                        // 子目录占位文件：xxx/.keep（或旧版 xxx/.gitkeep）
+                        if (/\/\.(keep|gitkeep)$/.test(relative)) {
+                            const folderPath = relative.replace(/\/\.(keep|gitkeep)$/, '');
                             if (folderPath && !folderPath.includes('/')) {
                                 foldersSet.add(folderPath);
                             }
                             continue;
                         }
-            
-                        // 普通文件处理
+
+                        // 旧版遗留：GitHub 曾把 "文件夹/.gitkeep" 改名成 "文件夹.gitkeep"
+                        if (/^[^/]+\.gitkeep$/.test(relative)) {
+                            foldersSet.add(relative.replace(/\.gitkeep$/, ''));
+                            continue;
+                        }
+
+                        // 普通文件：包含 "/" 说明位于子目录，取第一段作为子文件夹名
                         if (relative.includes('/')) {
-                            const folderName = relative.split('/')[0];
-                            foldersSet.add(folderName);
+                            foldersSet.add(relative.split('/')[0]);
                         } else {
                             children.push({
                                 name: relative,
@@ -1042,7 +1256,7 @@
                             });
                         }
                     }
-            
+
                     // 构建文件夹列表
                     const folderItems = Array.from(foldersSet).map(name => ({
                         name: name,
@@ -1051,18 +1265,18 @@
                         size: 0,
                         download_url: null
                     }));
-            
+
                     folderItems.sort((a, b) => a.name.localeCompare(b.name));
                     children.sort((a, b) => a.name.localeCompare(b.name));
-            
-                    const items = [...folderItems, ...children];
-                    renderFileList(items, cleanPath);
+
+                    currentItems = [...folderItems, ...children];
+                    renderFileList(currentItems, cleanPath);
                 } catch (err) {
                     console.error(err);
                     fileListEl.innerHTML = `
                         <div class="empty-state">
                             <i class="fas fa-exclamation-triangle" style="color:#cf222e;"></i>
-                            <p>加载失败: ${err.message}</p>
+                            <p>加载失败: ${escapeHtml(err.message)}</p>
                         </div>
                     `;
                     showToast('加载失败: ' + err.message, 'error');
@@ -1070,7 +1284,7 @@
             }
 
             // ============================================================
-            //  渲染
+            //  渲染（通过 data-idx 索引绑定，避免特殊字符路径破坏 HTML 属性）
             // ============================================================
             function renderFileList(items, path) {
                 if (!items || items.length === 0) {
@@ -1085,7 +1299,7 @@
                 }
 
                 let html = '';
-                for (const item of items) {
+                items.forEach((item, idx) => {
                     const isFolder = (item.type === 'dir');
                     const name = item.name;
                     const size = item.size || 0;
@@ -1093,7 +1307,7 @@
                     const iconHtml = getIconHtml(name, isFolder);
                     const sizeStr = isFolder ? '—' : formatSize(size);
                     const ext = getExtension(name);
-                    const extBadge = ext ? `<span class="ext-badge">.${ext}</span>` : '';
+                    const extBadge = ext ? `<span class="ext-badge">.${escapeHtml(ext)}</span>` : '';
 
                     let actionsHtml = '';
                     if (isFolder) {
@@ -1102,28 +1316,27 @@
                         const canPrev = canPreview(name);
                         if (canPrev) {
                             actionsHtml +=
-                                `<button class="btn-sm primary" data-action="preview" data-path="${item.path}" data-name="${name}"><i class="fas fa-eye"></i> <span>预览</span></button>`;
+                                `<button class="btn-sm primary" data-action="preview" data-idx="${idx}"><i class="fas fa-eye"></i> <span>预览</span></button>`;
                         }
                         actionsHtml +=
-                            `<button class="btn-sm" data-action="download" data-path="${item.path}" data-name="${name}" data-url="${item.download_url || ''}"><i class="fas fa-download"></i> <span>下载</span></button>`;
-                        // 删除按钮
+                            `<button class="btn-sm" data-action="download" data-idx="${idx}"><i class="fas fa-download"></i> <span>下载</span></button>`;
                         actionsHtml +=
-                            `<button class="btn-sm danger" data-action="delete" data-path="${item.path}" data-name="${name}"><i class="fas fa-trash"></i> <span>删除</span></button>`;
+                            `<button class="btn-sm danger" data-action="delete" data-idx="${idx}"><i class="fas fa-trash"></i> <span>删除</span></button>`;
                     }
 
                     const rowClass = isFolder ? 'file-item is-folder' : 'file-item';
-                    const clickAttr = isFolder ? `data-folder="${item.path}"` : '';
+                    const clickAttr = isFolder ? `data-idx="${idx}"` : '';
 
                     html += `
                         <div class="${rowClass}" ${clickAttr}>
                             <div class="icon">${iconHtml}</div>
-                            <div class="name">${name} ${extBadge}</div>
+                            <div class="name">${escapeHtml(name)} ${extBadge}</div>
                             <div class="type">${typeName}</div>
                             <div class="size">${sizeStr}</div>
                             <div class="actions">${actionsHtml}</div>
                         </div>
                     `;
-                }
+                });
 
                 fileListEl.innerHTML = html;
 
@@ -1131,10 +1344,8 @@
                 fileListEl.querySelectorAll('.file-item.is-folder').forEach(el => {
                     el.addEventListener('click', function(e) {
                         if (e.target.closest('.actions')) return;
-                        const folderPath = this.dataset.folder;
-                        if (folderPath) {
-                            navigateTo(folderPath);
-                        }
+                        const item = currentItems[this.dataset.idx];
+                        if (item) navigateTo(item.path);
                     });
                 });
 
@@ -1142,9 +1353,8 @@
                 fileListEl.querySelectorAll('[data-action="preview"]').forEach(btn => {
                     btn.addEventListener('click', function(e) {
                         e.stopPropagation();
-                        const path = this.dataset.path;
-                        const name = this.dataset.name;
-                        if (path) handlePreview(path, name);
+                        const item = currentItems[this.dataset.idx];
+                        if (item) handlePreview(item);
                     });
                 });
 
@@ -1152,10 +1362,8 @@
                 fileListEl.querySelectorAll('[data-action="download"]').forEach(btn => {
                     btn.addEventListener('click', function(e) {
                         e.stopPropagation();
-                        const url = this.dataset.url;
-                        const name = this.dataset.name;
-                        if (url) handleDownload(url, name);
-                        else showToast('下载链接无效', 'error');
+                        const item = currentItems[this.dataset.idx];
+                        if (item) handleDownload(item);
                     });
                 });
 
@@ -1163,9 +1371,8 @@
                 fileListEl.querySelectorAll('[data-action="delete"]').forEach(btn => {
                     btn.addEventListener('click', function(e) {
                         e.stopPropagation();
-                        const path = this.dataset.path;
-                        const name = this.dataset.name;
-                        if (path) handleDelete(path, name);
+                        const item = currentItems[this.dataset.idx];
+                        if (item) handleDelete(item);
                     });
                 });
             }
@@ -1181,7 +1388,7 @@
             }
 
             // ============================================================
-            //  新建文件夹（通过上传空的 .gitkeep）
+            //  新建文件夹（通过上传 .keep 占位资产）
             // ============================================================
             async function createFolder(folderName) {
                 if (!folderName || folderName.trim() === '') {
@@ -1189,17 +1396,26 @@
                     return;
                 }
                 const name = folderName.trim();
-                if (/[\/:*?"<>|\\]/.test(name)) {
+                if (/[\/:*?"<>|\\]/.test(name) || name === '.' || name === '..' || name.endsWith('.')) {
                     showToast('文件夹名称包含非法字符', 'error');
                     return;
                 }
-                const folderPath = currentPath === '/' ? `/${name}` : `${currentPath}/${name}`;
-                const keepPath = currentPath === '/' ? `${name}/.gitkeep` : `${currentPath.slice(1)}/${name}/.gitkeep`;
+                const prefix = currentPath === '/' ? '' : currentPath.slice(1) + '/';
+                const folderPath = prefix + name;
+
+                // 已存在检查
+                const exists = allAssets.some(a =>
+                    a.name === folderPath || a.name.startsWith(folderPath + '/')
+                );
+                if (exists) {
+                    showToast(`文件夹 "${name}" 已存在`, 'error');
+                    return;
+                }
 
                 try {
-                    // 空 base64 (空文件)
-                    const emptyBase64 = btoa(' '); // 至少包含一个空格
-                    await uploadFileViaFunction(keepPath, emptyBase64);
+                    // 占位内容为一个空格，保证资产非空
+                    const emptyBase64 = btoa(' ');
+                    await uploadFileViaFunction(folderPath + '/.keep', emptyBase64);
                     showToast(`文件夹 "${name}" 创建成功`, 'success');
                     newFolderDialog.classList.remove('active');
                     loadDirectory(currentPath);
@@ -1219,6 +1435,11 @@
 
                 for (const file of files) {
                     try {
+                        if (file.size > MAX_FILE_SIZE) {
+                            failed++;
+                            showToast(`跳过 ${file.name}：超过 4MB 上限（Netlify Function 请求体限制）`, 'error');
+                            continue;
+                        }
                         const reader = new FileReader();
                         const base64 = await new Promise((resolve, reject) => {
                             reader.onload = () => {
@@ -1252,70 +1473,120 @@
             // ============================================================
             //  预览
             // ============================================================
-            async function handlePreview(path, name) {
-                try {
-                    const asset = allAssets.find(a => a.name === path);
-                    if (!asset) {
-                        showToast('未找到文件', 'error');
-                        return;
-                    }
-            
-                    const info = getFileType(name);
-                    const ext = getExtension(name);
-                    const isImage = ['jpg', 'jpeg', 'png', 'gif', 'svg', 'webp', 'bmp', 'ico'].includes(ext);
-            
-                    previewTitle.innerHTML = `<i class="${info.icon}"></i> ${name}`;
-            
-                    if (isImage) {
-                        // 图片直接使用 GitHub 下载链接
-                        previewBody.innerHTML = `<img src="${asset.download_url}" alt="${name}" style="max-width:100%;" />`;
-                    } else {
-                        // 文本/代码类通过 Function 代理获取
-                        const resp = await fetch(`${API_BASE}/preview?path=${encodeURIComponent(path)}`);
-                        if (!resp.ok) {
-                            const err = await resp.json().catch(() => ({}));
-                            throw new Error(err.error || `预览失败 (${resp.status})`);
-                        }
-                        const data = await resp.json();
-                        // 注意：preview.js 现在返回的是 Base64，但文本内容我们可以直接用
-                        // 但为了兼容，我们直接请求文本内容
-                        // 更好：在 preview.js 中对文本类型返回纯文本，对图片返回二进制
-                        // 这里简化处理：对图片用 download_url，对文本用 Function
-                        const textResp = await fetch(`${API_BASE}/preview?path=${encodeURIComponent(path)}`);
-                        const textData = await textResp.json();
-                        // 如果返回的是 Base64，需要解码
-                        let content = textData.content || '';
-                        if (textData.isBase64Encoded) {
-                            content = atob(textData.content);
-                        }
-                        previewBody.innerHTML = `<pre style="margin:0;font-family:inherit;white-space:pre-wrap;word-break:break-word;">${escapeHtml(content)}</pre>`;
-                    }
-                    previewModal.classList.add('active');
-                    previewModal.dataset.path = path;
-                } catch (err) {
-                    showToast('预览失败: ' + err.message, 'error');
+            function revokePreviewUrl() {
+                if (previewObjectUrl) {
+                    URL.revokeObjectURL(previewObjectUrl);
+                    previewObjectUrl = null;
                 }
             }
+
+            async function handlePreview(item) {
+                const info = getFileType(item.name);
+                const ext = getExtension(item.name);
+                const isImage = IMAGE_EXTS.includes(ext);
+                const isVideo = VIDEO_EXTS.includes(ext);
+                const isAudio = AUDIO_EXTS.includes(ext);
+
+                previewTitle.innerHTML = `<i class="${info.icon}"></i> ${escapeHtml(item.name)}`;
+                previewBody.innerHTML = '<div class="preview-fallback">加载中…</div>';
+                previewModal.classList.add('active');
+                currentPreviewItem = item;
+
+                try {
+                    // 图片优先走 GitHub 直链（公开仓库，不受 Function 体积限制）
+                    if (isImage && item.download_url) {
+                        const img = document.createElement('img');
+                        img.src = item.download_url;
+                        img.alt = item.name;
+                        img.style.maxWidth = '100%';
+                        img.style.display = 'block';
+                        img.style.margin = '0 auto';
+                        previewBody.innerHTML = '';
+                        previewBody.appendChild(img);
+                        return;
+                    }
+
+                    if (item.size > MAX_FILE_SIZE) {
+                        previewBody.innerHTML = `
+                            <div class="preview-fallback">
+                                <i class="fas fa-file" style="font-size:32px;color:#d0d7de;"></i>
+                                <p>文件超过 4MB，无法在线预览，请直接下载</p>
+                            </div>`;
+                        return;
+                    }
+
+                    const resp = await fetch(`${API_BASE}/preview?path=${encodeURIComponent(item.path)}`);
+                    if (!resp.ok) {
+                        const err = await resp.json().catch(() => ({}));
+                        throw new Error(err.error || `预览失败 (${resp.status})`);
+                    }
+                    const blob = await resp.blob();
+
+                    revokePreviewUrl();
+                    previewObjectUrl = URL.createObjectURL(blob);
+
+                    if (isImage) {
+                        previewBody.innerHTML = `<img src="${previewObjectUrl}" alt="preview" style="max-width:100%;display:block;margin:0 auto;">`;
+                    } else if (isVideo) {
+                        previewBody.innerHTML = `<video src="${previewObjectUrl}" controls autoplay style="max-width:100%;display:block;margin:0 auto;"></video>`;
+                    } else if (isAudio) {
+                        previewBody.innerHTML = `<audio src="${previewObjectUrl}" controls style="width:100%;"></audio>`;
+                    } else {
+                        const text = await blob.text();
+                        previewBody.innerHTML = `<pre style="margin:0;font-family:inherit;white-space:pre-wrap;word-break:break-word;">${escapeHtml(text)}</pre>`;
+                    }
+                } catch (err) {
+                    previewBody.innerHTML = `
+                        <div class="preview-fallback">
+                            <i class="fas fa-exclamation-triangle" style="color:#cf222e;"></i>
+                            <p>预览失败: ${escapeHtml(err.message)}</p>
+                        </div>`;
+                }
+            }
+
             // ============================================================
-            //  下载（直接使用下载链接）
+            //  下载（小文件经 Function 中转以获得正确文件名，
+            //  大文件回退 GitHub 直链）
             // ============================================================
-            function handleDownload(url, name) {
-              if (!url) {
-                showToast('下载链接无效', 'error');
-                return;
-              }
-              const a = document.createElement('a');
-              a.href = url;
-              a.download = name;
-              document.body.appendChild(a);
-              a.click();
-              document.body.removeChild(a);
+            function triggerDownload(url, name) {
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = name || '';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+            }
+
+            async function handleDownload(item) {
+                try {
+                    if (item.size > MAX_FILE_SIZE) {
+                        if (item.download_url) {
+                            showToast('文件较大，走直链下载（保存的文件名可能显示为编码后的名称）', 'info');
+                            triggerDownload(item.download_url, item.name);
+                            return;
+                        }
+                    }
+                    const resp = await fetch(`${API_BASE}/preview?path=${encodeURIComponent(item.path)}`);
+                    if (!resp.ok) {
+                        const err = await resp.json().catch(() => ({}));
+                        throw new Error(err.error || `下载失败 (${resp.status})`);
+                    }
+                    const blob = await resp.blob();
+                    const blobUrl = URL.createObjectURL(blob);
+                    triggerDownload(blobUrl, item.name);
+                    setTimeout(() => URL.revokeObjectURL(blobUrl), 60000);
+                } catch (err) {
+                    showToast('下载失败: ' + err.message, 'error');
+                    if (item.download_url) {
+                        triggerDownload(item.download_url, item.name);
+                    }
+                }
             }
 
             // ============================================================
             //  删除（需要管理员密码）
             // ============================================================
-            async function handleDelete(path, name) {
+            async function handleDelete(item) {
                 const password = prompt('请输入管理员密码以删除文件：');
                 if (password === null) return; // 取消
                 if (!password.trim()) {
@@ -1323,8 +1594,8 @@
                     return;
                 }
                 try {
-                    await deleteFileViaFunction(path, password.trim());
-                    showToast(`文件 "${name}" 已删除`, 'success');
+                    await deleteFileViaFunction(item.path, password.trim());
+                    showToast(`文件 "${item.name}" 已删除`, 'success');
                     loadDirectory(currentPath);
                 } catch (err) {
                     showToast('删除失败: ' + err.message, 'error');
@@ -1334,6 +1605,13 @@
             // ============================================================
             //  事件绑定
             // ============================================================
+
+            // 返回上级目录
+            upBtn.addEventListener('click', () => {
+                if (currentPath !== '/') {
+                    loadDirectory(getParentPath(currentPath));
+                }
+            });
 
             // 刷新
             refreshBtn.addEventListener('click', () => loadDirectory(currentPath));
@@ -1399,7 +1677,8 @@
             // 预览模态框关闭
             function closePreview() {
                 previewModal.classList.remove('active');
-                delete previewModal.dataset.path;
+                currentPreviewItem = null;
+                revokePreviewUrl();
             }
             previewCloseBtn.addEventListener('click', closePreview);
             previewCloseBtn2.addEventListener('click', closePreview);
@@ -1409,16 +1688,10 @@
 
             // 预览中的下载按钮
             previewDownloadBtn.addEventListener('click', function() {
-                const path = previewModal.dataset.path;
-                if (!path) {
-                    showToast('无法获取文件路径', 'error');
-                    return;
-                }
-                const asset = allAssets.find(a => a.name === path);
-                if (asset) {
-                    handleDownload(asset.download_url, asset.name);
+                if (currentPreviewItem) {
+                    handleDownload(currentPreviewItem);
                 } else {
-                    showToast('文件信息丢失', 'error');
+                    showToast('无法获取文件信息', 'error');
                 }
             });
 
