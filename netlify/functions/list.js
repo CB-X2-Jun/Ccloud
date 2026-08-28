@@ -1,15 +1,11 @@
-// utils.js 可单独提取，但为减少文件，这里在每个函数中复制基础工具函数
-
+// netlify/functions/list.js
 const REPO_OWNER = process.env.REPO_OWNER || 'CB-X2-Jun';
 const REPO_NAME = process.env.REPO_NAME || 'Ccloud-files';
 const RELEASE_TAG = process.env.RELEASE_TAG || 'cloud-files';
 const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
 
 const API_BASE = 'https://api.github.com';
-const UPLOAD_BASE = 'https://uploads.github.com';
 
-// 通用请求头
 function getHeaders(additional = {}) {
   return {
     'Authorization': `token ${GITHUB_TOKEN}`,
@@ -18,7 +14,6 @@ function getHeaders(additional = {}) {
   };
 }
 
-// 获取或创建 Release（返回 release id）
 async function getOrCreateRelease() {
   const url = `${API_BASE}/repos/${REPO_OWNER}/${REPO_NAME}/releases/tags/${RELEASE_TAG}`;
   let resp = await fetch(url, { headers: getHeaders() });
@@ -45,7 +40,6 @@ async function getOrCreateRelease() {
   return data.id;
 }
 
-// 获取所有资产
 async function getAssets() {
   const releaseId = await getOrCreateRelease();
   const url = `${API_BASE}/repos/${REPO_OWNER}/${REPO_NAME}/releases/${releaseId}/assets`;
@@ -54,16 +48,22 @@ async function getAssets() {
   return resp.json();
 }
 
-// netlify/functions/list.js
-exports.handler = async (event, context) => {
+exports.handler = async (event) => {
   try {
     const assets = await getAssets();
-    // 返回所有资产名称、大小等信息
-    const list = assets.map(a => ({
-      name: a.name,
-      size: a.size,
-      download_url: a.browser_download_url
-    }));
+    const list = assets.map(a => {
+      // 修正路径：移除可能的前导斜杠，统一为相对路径
+      let name = a.name;
+      if (name.startsWith('/')) name = name.slice(1);
+      // 构建稳定的下载链接（即使 browser_download_url 缺失也可用）
+      const download_url = a.browser_download_url || 
+        `https://github.com/${REPO_OWNER}/${REPO_NAME}/releases/download/${RELEASE_TAG}/${encodeURIComponent(name)}`;
+      return {
+        name: name,
+        size: a.size,
+        download_url: download_url
+      };
+    });
     return {
       statusCode: 200,
       body: JSON.stringify({ items: list })
