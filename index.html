@@ -1,0 +1,753 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>☁️ 云盘 (Release 存储)</title>
+    <!-- Font Awesome 6 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" />
+    <style>
+        /* ---------- 样式与之前保持一致，略作简化 ---------- */
+        * { margin:0; padding:0; box-sizing:border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #f6f8fa; color: #1f2328; min-height:100vh; display:flex; justify-content:center; padding:30px 20px; }
+        .app { max-width:1100px; width:100%; background:#fff; border-radius:16px; box-shadow:0 8px 30px rgba(0,0,0,0.08); padding:28px 32px 40px; }
+        .header { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:16px; margin-bottom:24px; border-bottom:1px solid #eaeef2; padding-bottom:18px; }
+        .logo { display:flex; align-items:center; gap:10px; font-size:22px; font-weight:600; color:#0d1117; }
+        .logo i { color:#2d7aff; font-size:26px; }
+        .token-area { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+        .token-area label { font-size:14px; font-weight:500; color:#57606a; }
+        .token-area input { padding:8px 14px; border:1.5px solid #d0d7de; border-radius:8px; font-size:14px; width:260px; background:#fafbfc; }
+        .token-area input:focus { border-color:#2d7aff; outline:none; box-shadow:0 0 0 3px rgba(45,122,255,0.15); }
+        .token-area .btn { padding:8px 18px; border:none; border-radius:8px; font-size:14px; font-weight:500; cursor:pointer; background:#2d7aff; color:#fff; }
+        .token-area .btn:hover { background:#1c6ae0; }
+        .token-status { font-size:13px; color:#3fb950; font-weight:500; display:flex; align-items:center; gap:4px; }
+        .nav-bar { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px; margin-bottom:18px; padding:6px 0; }
+        .path-display { display:flex; align-items:center; gap:6px; font-size:16px; font-weight:500; color:#1f2328; background:#f0f3f6; padding:6px 16px; border-radius:24px; flex:1; min-width:200px; overflow:hidden; white-space:nowrap; text-overflow:ellipsis; }
+        .path-display i { color:#6e7781; font-size:14px; }
+        .path-display .path-text { overflow:hidden; text-overflow:ellipsis; font-family: monospace; }
+        .nav-actions { display:flex; gap:10px; flex-wrap:wrap; }
+        .nav-actions .btn { padding:7px 18px; border:none; border-radius:20px; font-size:14px; font-weight:500; cursor:pointer; display:inline-flex; align-items:center; gap:6px; background:#f0f3f6; color:#1f2328; }
+        .nav-actions .btn:hover { background:#e1e6ec; }
+        .nav-actions .btn-primary { background:#2d7aff; color:#fff; }
+        .nav-actions .btn-primary:hover { background:#1c6ae0; }
+        .drop-zone { border:2.5px dashed #d0d7de; border-radius:14px; padding:36px 20px; text-align:center; color:#57606a; transition:border-color 0.25s, background 0.25s; margin-bottom:22px; background:#fafbfc; cursor:pointer; position:relative; }
+        .drop-zone.drag-over { border-color:#2d7aff; background:#f0f5ff; }
+        .drop-zone i { font-size:36px; color:#8d96a0; margin-bottom:8px; display:block; }
+        .drop-zone .hint { font-size:15px; font-weight:450; }
+        .drop-zone input[type="file"] { position:absolute; inset:0; opacity:0; cursor:pointer; }
+        .list-container { border:1px solid #eaeef2; border-radius:12px; overflow:hidden; background:#fff; }
+        .list-header { display:grid; grid-template-columns:40px 1fr 140px 120px 1fr; padding:10px 18px; background:#f6f8fa; font-size:13px; font-weight:600; color:#57606a; border-bottom:1px solid #eaeef2; gap:8px; align-items:center; }
+        .file-item { display:grid; grid-template-columns:40px 1fr 140px 120px 1fr; padding:10px 18px; align-items:center; gap:8px; border-bottom:1px solid #f0f3f6; transition:background 0.12s; }
+        .file-item:last-child { border-bottom:none; }
+        .file-item:hover { background:#f8faff; }
+        .file-item .icon { font-size:20px; text-align:center; display:flex; align-items:center; justify-content:center; width:32px; height:32px; color:#57606a; }
+        .file-item .icon.folder-icon { color:#54a0ff; }
+        .file-item .name { font-size:15px; font-weight:450; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-family: monospace; display:flex; align-items:center; gap:6px; }
+        .file-item .type { font-size:13px; color:#57606a; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+        .file-item .size { font-size:13px; color:#57606a; text-align:right; }
+        .file-item .actions { display:flex; gap:10px; justify-content:flex-end; flex-wrap:wrap; }
+        .file-item .actions .btn-sm { padding:2px 12px; border:1px solid #d0d7de; border-radius:16px; background:transparent; font-size:12px; cursor:pointer; transition:background 0.15s; color:#1f2328; font-weight:450; display:inline-flex; align-items:center; gap:4px; }
+        .file-item .actions .btn-sm:hover { background:#f0f3f6; border-color:#8d96a0; }
+        .file-item .actions .btn-sm.primary { border-color:#2d7aff; color:#2d7aff; }
+        .file-item .actions .btn-sm.primary:hover { background:#eef4ff; }
+        .file-item.is-folder { cursor:pointer; }
+        .file-item.is-folder:hover .name { color:#2d7aff; }
+        .empty-state { padding:48px 20px; text-align:center; color:#8d96a0; }
+        .empty-state i { font-size:44px; color:#d0d7de; margin-bottom:12px; display:block; }
+        .modal-overlay, .dialog-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.45); backdrop-filter:blur(6px); display:none; align-items:center; justify-content:center; z-index:1000; padding:24px; }
+        .modal-overlay.active, .dialog-overlay.active { display:flex; }
+        .modal, .dialog { background:#fff; border-radius:18px; max-width:780px; width:100%; max-height:90vh; display:flex; flex-direction:column; box-shadow:0 20px 60px rgba(0,0,0,0.25); animation:modalIn 0.2s ease; }
+        .dialog { max-width:420px; padding:28px 32px 32px; }
+        .modal-header { display:flex; align-items:center; justify-content:space-between; padding:18px 24px; border-bottom:1px solid #eaeef2; }
+        .modal-header h3 { font-size:17px; font-weight:600; display:flex; align-items:center; gap:10px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+        .modal-header .close-btn { background:none; border:none; font-size:22px; cursor:pointer; color:#57606a; padding:4px 8px; border-radius:8px; }
+        .modal-header .close-btn:hover { background:#f0f3f6; }
+        .modal-body { padding:24px; overflow-y:auto; flex:1; font-size:14px; line-height:1.6; white-space:pre-wrap; word-break:break-word; font-family: monospace; min-height:120px; max-height:60vh; }
+        .modal-body img { max-width:100%; height:auto; border-radius:8px; display:block; margin:0 auto; }
+        .modal-footer { padding:14px 24px; border-top:1px solid #eaeef2; display:flex; justify-content:flex-end; gap:12px; }
+        .modal-footer .btn, .dialog .dialog-actions .btn { padding:8px 22px; border:none; border-radius:20px; font-size:14px; font-weight:500; cursor:pointer; transition:background 0.15s; background:#f0f3f6; color:#1f2328; }
+        .modal-footer .btn-primary, .dialog .dialog-actions .btn-confirm { background:#2d7aff; color:#fff; }
+        .modal-footer .btn-primary:hover, .dialog .dialog-actions .btn-confirm:hover { background:#1c6ae0; }
+        .dialog h3 { font-size:18px; font-weight:600; margin-bottom:6px; }
+        .dialog p { color:#57606a; font-size:14px; margin-bottom:18px; }
+        .dialog input { width:100%; padding:10px 14px; border:1.5px solid #d0d7de; border-radius:10px; font-size:15px; background:#fafbfc; }
+        .dialog input:focus { border-color:#2d7aff; outline:none; box-shadow:0 0 0 3px rgba(45,122,255,0.12); }
+        .dialog .dialog-actions { display:flex; justify-content:flex-end; gap:12px; margin-top:22px; }
+        .toast-container { position:fixed; bottom:28px; left:50%; transform:translateX(-50%); z-index:2000; display:flex; flex-direction:column; align-items:center; gap:8px; pointer-events:none; }
+        .toast { background:#1f2328; color:#fff; padding:10px 24px; border-radius:30px; font-size:14px; font-weight:450; box-shadow:0 6px 24px rgba(0,0,0,0.18); pointer-events:auto; animation:toastIn 0.25s ease; display:flex; align-items:center; gap:10px; }
+        .toast i { font-size:16px; }
+        .toast.success i { color:#3fb950; }
+        .toast.error i { color:#f85149; }
+        .toast.info i { color:#58a6ff; }
+        @keyframes modalIn { from { opacity:0; transform:translateY(20px) scale(0.96); } to { opacity:1; transform:translateY(0) scale(1); } }
+        @keyframes toastIn { from { opacity:0; transform:translateY(20px) scale(0.94); } to { opacity:1; transform:translateY(0) scale(1); } }
+        @media (max-width:780px) {
+            .app { padding:16px 14px 28px; }
+            .header { flex-direction:column; align-items:stretch; }
+            .token-area input { width:100%; }
+            .list-header { display:none; }
+            .file-item { grid-template-columns:36px 1fr auto; padding:12px 14px; gap:6px 10px; }
+            .file-item .type { display:none; }
+            .file-item .size { grid-column:3; grid-row:1; text-align:right; font-size:12px; color:#8d96a0; }
+            .file-item .actions { grid-column:1/-1; grid-row:2; justify-content:flex-start; padding-top:4px; gap:6px; }
+            .nav-bar { flex-direction:column; align-items:stretch; }
+            .nav-actions .btn { flex:1; justify-content:center; }
+        }
+    </style>
+</head>
+<body>
+    <div class="app">
+        <div class="header">
+            <div class="logo"><i class="fas fa-cloud"></i><span>我的云盘 (Release)</span></div>
+            <div class="token-area" id="tokenArea">
+                <label for="tokenInput"><i class="fas fa-key"></i> Token</label>
+                <input type="password" id="tokenInput" placeholder="输入 GitHub Token (repo 权限)" />
+                <button class="btn" id="connectBtn">连接</button>
+                <span class="token-status" id="tokenStatus" style="display:none;"><i class="fas fa-check-circle"></i> 已连接</span>
+            </div>
+        </div>
+        <div class="nav-bar">
+            <div class="path-display"><i class="fas fa-folder-open"></i><span class="path-text" id="pathDisplay">/</span></div>
+            <div class="nav-actions">
+                <button class="btn" id="refreshBtn"><i class="fas fa-rotate"></i> 刷新</button>
+                <button class="btn btn-primary" id="newFolderBtn"><i class="fas fa-folder-plus"></i> 新建文件夹</button>
+            </div>
+        </div>
+        <div class="drop-zone" id="dropZone">
+            <i class="fas fa-cloud-upload-alt"></i>
+            <div class="hint">拖动文件到此处上传</div>
+            <div class="sub-hint" style="font-size:13px;color:#8d96a0;margin-top:4px;">支持大文件 (最大 2GB)</div>
+            <input type="file" id="fileInput" multiple />
+        </div>
+        <div class="list-container">
+            <div class="list-header"><span></span><span>名称</span><span>类型</span><span>大小</span><span>操作</span></div>
+            <div id="fileList"><div class="empty-state"><i class="fas fa-inbox"></i><p>请先连接 Token</p></div></div>
+        </div>
+    </div>
+
+    <!-- 预览模态框 -->
+    <div class="modal-overlay" id="previewModal">
+        <div class="modal">
+            <div class="modal-header"><h3 id="previewTitle"><i class="fas fa-file"></i> 预览</h3><button class="close-btn" id="previewCloseBtn">&times;</button></div>
+            <div class="modal-body" id="previewBody"><div class="preview-fallback">加载中…</div></div>
+            <div class="modal-footer"><button class="btn" id="previewDownloadBtn"><i class="fas fa-download"></i> 下载</button><button class="btn btn-primary" id="previewCloseBtn2">关闭</button></div>
+        </div>
+    </div>
+
+    <!-- 新建文件夹对话框 -->
+    <div class="dialog-overlay" id="newFolderDialog">
+        <div class="dialog">
+            <h3><i class="fas fa-folder-plus" style="color:#2d7aff;"></i> 新建文件夹</h3>
+            <p>在当前路径下创建新文件夹</p>
+            <input type="text" id="folderNameInput" placeholder="输入文件夹名称" />
+            <div class="dialog-actions"><button class="btn" id="dialogCancelBtn">取消</button><button class="btn btn-confirm" id="dialogConfirmBtn">创建</button></div>
+        </div>
+    </div>
+
+    <div class="toast-container" id="toastContainer"></div>
+
+    <script>
+        (function() {
+            'use strict';
+
+            // ============================================================
+            //  配置 ———— 请修改为你的仓库信息
+            // ============================================================
+            const REPO_OWNER = 'CB-X2-Jun';
+            const REPO_NAME = 'Ccloud-files';
+            const RELEASE_TAG = 'cloud-files';  // 固定使用的 Release 标签
+            const BRANCH = 'main';
+
+            // ============================================================
+            //  文件类型映射 (与之前相同)
+            // ============================================================
+            const TYPE_MAP = {
+                'txt': { name: '文本文件', icon: 'fa-regular fa-file-lines', preview: true },
+                'log': { name: '日志文件', icon: 'fa-regular fa-file-lines', preview: true },
+                'md': { name: 'Markdown', icon: 'fa-regular fa-file-lines', preview: true },
+                'json': { name: 'JSON 数据', icon: 'fa-regular fa-file-code', preview: true },
+                'js': { name: 'JavaScript 源码', icon: 'fa-brands fa-js', preview: true },
+                'ts': { name: 'TypeScript 源码', icon: 'fa-regular fa-file-code', preview: true },
+                'html': { name: 'HTML 文档', icon: 'fa-brands fa-html5', preview: true },
+                'css': { name: 'CSS 样式', icon: 'fa-brands fa-css3-alt', preview: true },
+                'py': { name: 'Python 源码', icon: 'fa-brands fa-python', preview: true },
+                'java': { name: 'Java 源码', icon: 'fa-brands fa-java', preview: true },
+                'cpp': { name: 'C++ 源码', icon: 'fa-regular fa-file-code', preview: true },
+                'go': { name: 'Go 源码', icon: 'fa-brands fa-golang', preview: true },
+                'rs': { name: 'Rust 源码', icon: 'fa-regular fa-file-code', preview: true },
+                'php': { name: 'PHP 源码', icon: 'fa-brands fa-php', preview: true },
+                'sh': { name: 'Shell 脚本', icon: 'fa-regular fa-terminal', preview: true },
+                'pdf': { name: 'PDF 文档', icon: 'fa-regular fa-file-pdf', preview: false },
+                'docx': { name: 'Word 文档', icon: 'fa-regular fa-file-word', preview: false },
+                'xlsx': { name: 'Excel 表格', icon: 'fa-regular fa-file-excel', preview: false },
+                'pptx': { name: 'PowerPoint 演示', icon: 'fa-regular fa-file-powerpoint', preview: false },
+                'jpg': { name: 'JPEG 图片', icon: 'fa-regular fa-file-image', preview: true },
+                'jpeg': { name: 'JPEG 图片', icon: 'fa-regular fa-file-image', preview: true },
+                'png': { name: 'PNG 图片', icon: 'fa-regular fa-file-image', preview: true },
+                'gif': { name: 'GIF 动画', icon: 'fa-regular fa-file-image', preview: true },
+                'svg': { name: 'SVG 矢量图', icon: 'fa-regular fa-file-image', preview: true },
+                'webp': { name: 'WebP 图片', icon: 'fa-regular fa-file-image', preview: true },
+                'mp3': { name: 'MP3 音频', icon: 'fa-regular fa-file-audio', preview: false },
+                'mp4': { name: 'MP4 视频', icon: 'fa-regular fa-file-video', preview: false },
+                'zip': { name: 'ZIP 压缩包', icon: 'fa-regular fa-file-zipper', preview: false },
+                'rar': { name: 'RAR 压缩包', icon: 'fa-regular fa-file-zipper', preview: false },
+                '7z': { name: '7-Zip 压缩包', icon: 'fa-regular fa-file-zipper', preview: false },
+                'exe': { name: '应用程序', icon: 'fa-regular fa-file', preview: false },
+                'gitkeep': { name: '占位文件', icon: 'fa-regular fa-file', preview: false },
+            };
+            const UNKNOWN_TYPE = { name: '未知文件类型', icon: 'fa-regular fa-file', preview: true };
+
+            // ============================================================
+            //  状态
+            // ============================================================
+            let token = localStorage.getItem('gh_token') || '';
+            let currentPath = '/';
+            let fileList = [];
+            let previewData = null;
+            let releaseId = null; // 缓存 Release ID
+
+            // DOM 引用
+            const $ = (s) => document.querySelector(s);
+            const tokenInput = $('#tokenInput');
+            const connectBtn = $('#connectBtn');
+            const tokenStatus = $('#tokenStatus');
+            const pathDisplay = $('#pathDisplay');
+            const fileListEl = $('#fileList');
+            const refreshBtn = $('#refreshBtn');
+            const newFolderBtn = $('#newFolderBtn');
+            const dropZone = $('#dropZone');
+            const fileInput = $('#fileInput');
+            const previewModal = $('#previewModal');
+            const previewTitle = $('#previewTitle');
+            const previewBody = $('#previewBody');
+            const previewCloseBtn = $('#previewCloseBtn');
+            const previewCloseBtn2 = $('#previewCloseBtn2');
+            const previewDownloadBtn = $('#previewDownloadBtn');
+            const newFolderDialog = $('#newFolderDialog');
+            const folderNameInput = $('#folderNameInput');
+            const dialogCancelBtn = $('#dialogCancelBtn');
+            const dialogConfirmBtn = $('#dialogConfirmBtn');
+            const toastContainer = $('#toastContainer');
+
+            // ============================================================
+            //  工具函数
+            // ============================================================
+            function formatSize(bytes) {
+                if (bytes === 0) return '0 B';
+                const k = 1024;
+                const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
+                const i = Math.floor(Math.log(bytes) / Math.log(k));
+                const val = bytes / Math.pow(k, i);
+                return (i === 0 ? val : val.toFixed(2)) + ' ' + sizes[i];
+            }
+
+            function getFileType(filename) {
+                const dot = filename.lastIndexOf('.');
+                if (dot === -1 || dot === filename.length - 1) return UNKNOWN_TYPE;
+                const ext = filename.slice(dot + 1).toLowerCase();
+                return TYPE_MAP[ext] || UNKNOWN_TYPE;
+            }
+
+            function getIconHtml(filename, isFolder) {
+                if (isFolder) return '<i class="fas fa-folder" style="color:#54a0ff;"></i>';
+                const info = getFileType(filename);
+                return `<i class="${info.icon}"></i>`;
+            }
+
+            function getTypeName(filename, isFolder) {
+                if (isFolder) return '文件夹';
+                return getFileType(filename).name;
+            }
+
+            function canPreview(filename) {
+                if (!filename) return false;
+                return getFileType(filename).preview === true;
+            }
+
+            function getExtension(filename) {
+                const dot = filename.lastIndexOf('.');
+                if (dot === -1 || dot === filename.length - 1) return '';
+                return filename.slice(dot + 1).toLowerCase();
+            }
+
+            function sanitizePath(path) {
+                if (!path.startsWith('/')) path = '/' + path;
+                if (path.length > 1 && path.endsWith('/')) path = path.slice(0, -1);
+                return path;
+            }
+
+            function joinPath(parent, child) {
+                if (parent === '/') return '/' + child;
+                return parent + '/' + child;
+            }
+
+            function getParentPath(path) {
+                if (path === '/') return '/';
+                const parts = path.split('/').filter(Boolean);
+                parts.pop();
+                return '/' + parts.join('/');
+            }
+
+            function getFileNameFromPath(path) {
+                const parts = path.split('/').filter(Boolean);
+                return parts[parts.length - 1] || '';
+            }
+
+            function escapeHtml(text) {
+                const div = document.createElement('div');
+                div.textContent = text;
+                return div.innerHTML;
+            }
+
+            // ============================================================
+            //  Toast
+            // ============================================================
+            function showToast(msg, type = 'info', duration = 3200) {
+                const icons = { success: 'fa-check-circle', error: 'fa-exclamation-circle', info: 'fa-info-circle' };
+                const el = document.createElement('div');
+                el.className = `toast ${type}`;
+                el.innerHTML = `<i class="fas ${icons[type] || icons.info}"></i> ${msg}`;
+                toastContainer.appendChild(el);
+                setTimeout(() => { if (el.parentNode) el.remove(); }, duration);
+            }
+
+            // ============================================================
+            //  GitHub API 操作 (Release 方式)
+            // ============================================================
+            function getHeaders() {
+                if (!token) throw new Error('未提供 Token');
+                return { 'Authorization': `token ${token}`, 'Accept': 'application/vnd.github.v3+json' };
+            }
+
+            // 获取或创建 Release (固定 tag)
+            async function getOrCreateRelease() {
+                if (releaseId) return releaseId;
+                try {
+                    // 尝试获取 release
+                    const url = `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/releases/tags/${RELEASE_TAG}`;
+                    const resp = await fetch(url, { headers: getHeaders() });
+                    if (resp.ok) {
+                        const data = await resp.json();
+                        releaseId = data.id;
+                        return releaseId;
+                    }
+                    // 不存在则创建
+                    const createUrl = `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/releases`;
+                    const body = {
+                        tag_name: RELEASE_TAG,
+                        name: `Cloud Files (${RELEASE_TAG})`,
+                        body: '自动创建的 Release，用于存储云盘文件',
+                        draft: false,
+                        prerelease: false,
+                    };
+                    const createResp = await fetch(createUrl, {
+                        method: 'POST',
+                        headers: { ...getHeaders(), 'Content-Type': 'application/json' },
+                        body: JSON.stringify(body),
+                    });
+                    if (!createResp.ok) {
+                        const err = await createResp.json();
+                        throw new Error(err.message || '创建 Release 失败');
+                    }
+                    const data = await createResp.json();
+                    releaseId = data.id;
+                    return releaseId;
+                } catch (e) {
+                    console.error('getOrCreateRelease error:', e);
+                    throw e;
+                }
+            }
+
+            // 获取 Release 的所有资产 (用于构建文件列表)
+            async function fetchAssets() {
+                const id = await getOrCreateRelease();
+                const url = `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/releases/${id}/assets`;
+                const resp = await fetch(url, { headers: getHeaders() });
+                if (!resp.ok) throw new Error('获取资产列表失败');
+                return resp.json();
+            }
+
+            // 上传文件 (作为 Release 资产)
+            async function uploadAsset(file, path) {
+                const id = await getOrCreateRelease();
+                // 1. 检查是否存在同名资产，若有则先删除
+                const assets = await fetchAssets();
+                const exist = assets.find(a => a.name === path);
+                if (exist) {
+                    // 删除旧资产
+                    const delUrl = `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/releases/assets/${exist.id}`;
+                    await fetch(delUrl, { method: 'DELETE', headers: getHeaders() });
+                }
+
+                // 2. 上传新资产 (使用 multipart/form-data)
+                const uploadUrl = `https://uploads.github.com/repos/${REPO_OWNER}/${REPO_NAME}/releases/${id}/assets?name=${encodeURIComponent(path)}&label=`;
+                const formData = new FormData();
+                formData.append('file', file, path);
+
+                const resp = await fetch(uploadUrl, {
+                    method: 'POST',
+                    headers: { ...getHeaders(), 'Content-Type': 'multipart/form-data' }, // 注意：需去掉 Content-Type 让浏览器自动设置
+                    body: formData,
+                });
+                if (!resp.ok) {
+                    let msg = '上传失败';
+                    try { const err = await resp.json();
+                        msg = err.message || msg; } catch (_) {}
+                    throw new Error(msg);
+                }
+                return resp.json();
+            }
+
+            // 删除资产 (通过路径)
+            async function deleteAssetByPath(path) {
+                const assets = await fetchAssets();
+                const exist = assets.find(a => a.name === path);
+                if (!exist) throw new Error('文件不存在');
+                const delUrl = `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/releases/assets/${exist.id}`;
+                const resp = await fetch(delUrl, { method: 'DELETE', headers: getHeaders() });
+                if (!resp.ok) throw new Error('删除失败');
+            }
+
+            // 获取文件下载 URL (直接使用 release 下载链接)
+            function getDownloadUrl(path) {
+                return `https://github.com/${REPO_OWNER}/${REPO_NAME}/releases/download/${RELEASE_TAG}/${encodeURIComponent(path)}`;
+            }
+
+            // 获取文件内容 (用于预览)
+            async function fetchRawContent(path) {
+                const url = getDownloadUrl(path);
+                const resp = await fetch(url, { headers: { 'Authorization': `token ${token}` } });
+                if (!resp.ok) throw new Error('获取内容失败');
+                return resp.text();
+            }
+
+            // 获取文件 Blob (用于下载)
+            async function fetchRawBlob(path) {
+                const url = getDownloadUrl(path);
+                const resp = await fetch(url, { headers: { 'Authorization': `token ${token}` } });
+                if (!resp.ok) throw new Error('获取文件失败');
+                return resp.blob();
+            }
+
+            // ============================================================
+            //  核心：加载目录 (基于 Release 资产)
+            // ============================================================
+            async function loadDirectory(path) {
+                if (!token) {
+                    fileListEl.innerHTML = `<div class="empty-state"><i class="fas fa-key"></i><p>请先输入 Token 并连接</p></div>`;
+                    return;
+                }
+                const cleanPath = sanitizePath(path);
+                currentPath = cleanPath;
+                pathDisplay.textContent = cleanPath;
+
+                try {
+                    const assets = await fetchAssets();
+                    // 过滤出文件（资产名是完整路径）
+                    // 构建树结构
+                    const items = [];
+                    const folderSet = new Set();
+
+                    // 先提取所有文件路径
+                    const filePaths = assets.map(a => a.name).filter(name => name !== '');
+
+                    // 收集所有目录
+                    for (const fp of filePaths) {
+                        const parts = fp.split('/').filter(Boolean);
+                        let current = '';
+                        for (let i = 0; i < parts.length - 1; i++) {
+                            current = (current ? current + '/' : '') + parts[i];
+                            folderSet.add(current);
+                        }
+                    }
+
+                    // 构建当前路径下的文件/文件夹
+                    const prefix = cleanPath === '/' ? '' : cleanPath.slice(1) + '/';
+                    const children = [];
+
+                    for (const fp of filePaths) {
+                        if (!fp.startsWith(prefix)) continue;
+                        const relative = fp.slice(prefix.length);
+                        if (!relative) continue;
+                        // 如果包含 '/'，说明是子文件夹内的文件，忽略，由文件夹递归展示
+                        if (relative.includes('/')) continue;
+                        // 否则是当前目录下的文件
+                        children.push({ name: relative, path: fp, size: assets.find(a => a.name === fp).size, type: 'file' });
+                    }
+
+                    // 文件夹：从 folderSet 中过滤出当前路径下的直接子文件夹
+                    const subFolders = [];
+                    for (const f of folderSet) {
+                        if (!f.startsWith(prefix)) continue;
+                        const relative = f.slice(prefix.length);
+                        if (!relative || relative.includes('/')) continue;
+                        subFolders.push({ name: relative, path: f, type: 'dir' });
+                    }
+
+                    // 合并并排序
+                    const sortedFolders = subFolders.sort((a, b) => a.name.localeCompare(b.name));
+                    const sortedFiles = children.sort((a, b) => a.name.localeCompare(b.name));
+                    const all = [...sortedFolders, ...sortedFiles];
+                    fileList = all;
+                    renderFileList(all, cleanPath);
+                } catch (err) {
+                    console.error(err);
+                    fileListEl.innerHTML = `<div class="empty-state"><i class="fas fa-exclamation-triangle" style="color:#cf222e;"></i><p>加载失败: ${err.message}</p></div>`;
+                    showToast('加载失败: ' + err.message, 'error');
+                }
+            }
+
+            // ============================================================
+            //  渲染
+            // ============================================================
+            function renderFileList(items, path) {
+                if (!items || items.length === 0) {
+                    fileListEl.innerHTML = `<div class="empty-state"><i class="fas fa-folder-open"></i><p>此文件夹为空</p></div>`;
+                    return;
+                }
+                let html = '';
+                for (const item of items) {
+                    const isFolder = item.type === 'dir';
+                    const name = item.name;
+                    const size = item.size || 0;
+                    const typeName = getTypeName(name, isFolder);
+                    const iconHtml = getIconHtml(name, isFolder);
+                    const sizeStr = isFolder ? '—' : formatSize(size);
+                    const ext = getExtension(name);
+                    const extBadge = ext ? `<span class="ext-badge" style="font-size:11px;background:#eaeef2;padding:0 8px;border-radius:12px;color:#57606a;">.${ext}</span>` : '';
+
+                    let actionsHtml = '';
+                    if (isFolder) {
+                        actionsHtml = `<span style="font-size:12px;color:#8d96a0;"><i class="fas fa-chevron-right"></i></span>`;
+                    } else {
+                        const canPrev = canPreview(name);
+                        if (canPrev) {
+                            actionsHtml += `<button class="btn-sm primary" data-action="preview" data-path="${item.path}" data-name="${name}"><i class="fas fa-eye"></i> <span>预览</span></button>`;
+                        }
+                        actionsHtml += `<button class="btn-sm" data-action="download" data-path="${item.path}" data-name="${name}"><i class="fas fa-download"></i> <span>下载</span></button>`;
+                    }
+
+                    const rowClass = isFolder ? 'file-item is-folder' : 'file-item';
+                    const clickAttr = isFolder ? `data-folder="${item.path}"` : '';
+                    html += `
+                        <div class="${rowClass}" ${clickAttr}>
+                            <div class="icon">${iconHtml}</div>
+                            <div class="name">${name} ${extBadge}</div>
+                            <div class="type">${typeName}</div>
+                            <div class="size">${sizeStr}</div>
+                            <div class="actions">${actionsHtml}</div>
+                        </div>
+                    `;
+                }
+                fileListEl.innerHTML = html;
+
+                // 事件绑定
+                fileListEl.querySelectorAll('.file-item.is-folder').forEach(el => {
+                    el.addEventListener('click', function(e) {
+                        if (e.target.closest('.actions')) return;
+                        const folderPath = this.dataset.folder;
+                        if (folderPath) navigateTo(folderPath);
+                    });
+                });
+                fileListEl.querySelectorAll('[data-action="preview"]').forEach(btn => {
+                    btn.addEventListener('click', function(e) {
+                        e.stopPropagation();
+                        const path = this.dataset.path,
+                            name = this.dataset.name;
+                        if (path) handlePreview(path, name);
+                    });
+                });
+                fileListEl.querySelectorAll('[data-action="download"]').forEach(btn => {
+                    btn.addEventListener('click', function(e) {
+                        e.stopPropagation();
+                        const path = this.dataset.path,
+                            name = this.dataset.name;
+                        if (path) handleDownload(path, name);
+                    });
+                });
+            }
+
+            // ============================================================
+            //  导航
+            // ============================================================
+            function navigateTo(path) {
+                const clean = sanitizePath(path);
+                if (clean !== currentPath) loadDirectory(clean);
+            }
+
+            // ============================================================
+            //  新建文件夹 (通过上传一个 .gitkeep 文件)
+            // ============================================================
+            async function createFolder(folderName) {
+                if (!folderName || folderName.trim() === '') { showToast('请输入文件夹名称', 'error'); return; }
+                const name = folderName.trim();
+                if (/[\/:*?"<>|\\]/.test(name)) { showToast('文件夹名称包含非法字符', 'error'); return; }
+                const folderPath = currentPath === '/' ? `/${name}` : `${currentPath}/${name}`;
+                const keepPath = folderPath === '/' ? '.gitkeep' : `${folderPath.slice(1)}/.gitkeep`;
+
+                try {
+                    // 创建一个空的 Blob 作为 .gitkeep
+                    const emptyFile = new Blob([], { type: 'text/plain' });
+                    await uploadAsset(emptyFile, keepPath);
+                    showToast(`文件夹 "${name}" 创建成功`, 'success');
+                    newFolderDialog.classList.remove('active');
+                    loadDirectory(currentPath);
+                } catch (err) {
+                    showToast('创建失败: ' + err.message, 'error');
+                }
+            }
+
+            // ============================================================
+            //  上传文件
+            // ============================================================
+            async function uploadFiles(files) {
+                if (!token) { showToast('请先连接 Token', 'error'); return; }
+                if (!files || files.length === 0) return;
+                let success = 0,
+                    failed = 0;
+                for (const file of files) {
+                    try {
+                        const path = currentPath === '/' ? file.name : `${currentPath.slice(1)}/${file.name}`;
+                        await uploadAsset(file, path);
+                        success++;
+                    } catch (err) {
+                        failed++;
+                        console.error(err);
+                        showToast(`上传失败: ${file.name} — ${err.message}`, 'error');
+                    }
+                }
+                if (success > 0) {
+                    showToast(`成功上传 ${success} 个文件${failed > 0 ? `，${failed} 个失败` : ''}`, success === files.length ? 'success' :
+                        'info');
+                    loadDirectory(currentPath);
+                } else {
+                    showToast(`上传失败 ${failed} 个文件`, 'error');
+                }
+            }
+
+            // ============================================================
+            //  预览 & 下载
+            // ============================================================
+            async function handlePreview(path, name) {
+                if (!token) { showToast('请先连接 Token', 'error'); return; }
+                try {
+                    const content = await fetchRawContent(path);
+                    const info = getFileType(name);
+                    const ext = getExtension(name);
+                    const isImage = ['jpg', 'jpeg', 'png', 'gif', 'svg', 'webp', 'bmp', 'ico'].includes(ext);
+                    previewTitle.innerHTML = `<i class="${info.icon}"></i> ${name}`;
+                    previewData = { path, name, content };
+                    let bodyHtml = '';
+                    if (isImage) {
+                        const dataUri = `data:image/${ext === 'svg' ? 'svg+xml' : ext};base64,${btoa(content)}`;
+                        bodyHtml = `<img src="${dataUri}" alt="${name}" />`;
+                    } else {
+                        bodyHtml = `<pre style="margin:0;font-family:inherit;white-space:pre-wrap;word-break:break-word;">${escapeHtml(content)}</pre>`;
+                    }
+                    previewBody.innerHTML = bodyHtml;
+                    previewModal.classList.add('active');
+                } catch (err) {
+                    showToast('预览失败: ' + err.message, 'error');
+                }
+            }
+
+            async function handleDownload(path, name) {
+                if (!token) { showToast('请先连接 Token', 'error'); return; }
+                try {
+                    const blob = await fetchRawBlob(path);
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = name;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                } catch (err) {
+                    showToast('下载失败: ' + err.message, 'error');
+                }
+            }
+
+            // ============================================================
+            //  Token 管理
+            // ============================================================
+            function setToken(newToken) {
+                token = newToken.trim();
+                if (token) {
+                    localStorage.setItem('gh_token', token);
+                    tokenStatus.style.display = 'flex';
+                    tokenStatus.className = 'token-status';
+                    tokenStatus.innerHTML = '<i class="fas fa-check-circle"></i> 已连接';
+                    showToast('Token 已连接', 'success');
+                    // 重置 releaseId 以便重新获取
+                    releaseId = null;
+                    loadDirectory(currentPath);
+                } else {
+                    localStorage.removeItem('gh_token');
+                    tokenStatus.style.display = 'none';
+                    showToast('Token 已清除', 'info');
+                }
+            }
+
+            // ============================================================
+            //  事件绑定
+            // ============================================================
+            connectBtn.addEventListener('click', () => { const v = tokenInput.value.trim(); if (v) setToken(v);
+                else showToast('请输入 Token', 'error'); });
+            tokenInput.addEventListener('keydown', e => { if (e.key === 'Enter') connectBtn.click(); });
+            refreshBtn.addEventListener('click', () => loadDirectory(currentPath));
+            newFolderBtn.addEventListener('click', () => { if (!token) { showToast('请先连接 Token', 'error'); return; }
+                newFolderDialog.classList.add('active');
+                folderNameInput.value = '';
+                setTimeout(() => folderNameInput.focus(), 100); });
+            dialogCancelBtn.addEventListener('click', () => newFolderDialog.classList.remove('active'));
+            dialogConfirmBtn.addEventListener('click', () => { const name = folderNameInput.value.trim(); if (name)
+                createFolder(name);
+                else showToast('请输入文件夹名称', 'error'); });
+            folderNameInput.addEventListener('keydown', e => { if (e.key === 'Enter') dialogConfirmBtn.click(); if (e.key ===
+                    'Escape') dialogCancelBtn.click(); });
+            newFolderDialog.addEventListener('click', e => { if (e.target === e.currentTarget) newFolderDialog.classList.remove(
+                    'active'); });
+
+            dropZone.addEventListener('click', e => { if (!e.target.closest('input')) fileInput.click(); });
+            fileInput.addEventListener('change', function() { if (this.files.length) { uploadFiles(this.files);
+                    this.value = ''; } });
+            dropZone.addEventListener('dragover', e => { e.preventDefault();
+                dropZone.classList.add('drag-over'); });
+            dropZone.addEventListener('dragleave', e => { e.preventDefault();
+                dropZone.classList.remove('drag-over'); });
+            dropZone.addEventListener('drop', e => { e.preventDefault();
+                dropZone.classList.remove('drag-over'); const files = e.dataTransfer.files; if (files.length)
+                    uploadFiles(files); });
+
+            function closePreview() { previewModal.classList.remove('active');
+                previewData = null; }
+            previewCloseBtn.addEventListener('click', closePreview);
+            previewCloseBtn2.addEventListener('click', closePreview);
+            previewModal.addEventListener('click', e => { if (e.target === e.currentTarget) closePreview(); });
+            previewDownloadBtn.addEventListener('click', () => { if (previewData) handleDownload(previewData.path,
+                    previewData.name); });
+
+            document.addEventListener('keydown', e => {
+                if (e.key === 'Escape') {
+                    if (previewModal.classList.contains('active')) closePreview();
+                    if (newFolderDialog.classList.contains('active')) newFolderDialog.classList.remove('active');
+                }
+            });
+
+            // ============================================================
+            //  初始化
+            // ============================================================
+            function init() {
+                const saved = localStorage.getItem('gh_token');
+                if (saved) { tokenInput.value = saved;
+                    setToken(saved); } else {
+                    fileListEl.innerHTML = `<div class="empty-state"><i class="fas fa-key"></i><p>请输入 GitHub Token 并连接</p></div>`;
+                    pathDisplay.textContent = '/';
+                }
+            }
+            init();
+        })();
+    </script>
+</body>
+</html>
