@@ -1,5 +1,5 @@
 // netlify/functions/upload.js
-const { getOrCreateRelease, getAssets, getHeaders, REPO_OWNER, REPO_NAME, UPLOAD_BASE } = require('./_utils'); // 如果有工具文件，按需引入
+// const { getOrCreateRelease, getAssets, getHeaders, REPO_OWNER, REPO_NAME, UPLOAD_BASE } = require('./_utils'); // 如果有工具文件，按需引入
 // 如果还没有工具文件，也可以直接将下面代码中的工具函数内联（为简便，我给出完整的独立实现）
 
 // 为了方便，这里将必要的工具函数内联（您也可以提取到 _utils.js）
