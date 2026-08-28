@@ -51,23 +51,21 @@ async function getAssets() {
 exports.handler = async (event) => {
   try {
     const assets = await getAssets();
+    // 在 list.js 的 map 中
     const list = assets.map(a => {
-      // 修正路径：移除可能的前导斜杠，统一为相对路径
-      let name = a.name;
-      if (name.startsWith('/')) name = name.slice(1);
-      // 构建稳定的下载链接（即使 browser_download_url 缺失也可用）
-      const download_url = a.browser_download_url || 
-        `https://github.com/${REPO_OWNER}/${REPO_NAME}/releases/download/${RELEASE_TAG}/${encodeURIComponent(name)}`;
-      return {
-        name: name,
-        size: a.size,
-        download_url: download_url
-      };
+        let name = a.name;
+        if (name.startsWith('/')) name = name.slice(1);
+        // 解码 URL 编码的文件名
+        try {
+            name = decodeURIComponent(name);
+        } catch (_) { /* 解码失败则保持原样 */ }
+        return {
+            name: name,
+            size: a.size,
+            download_url: a.browser_download_url || 
+                `https://github.com/${REPO_OWNER}/${REPO_NAME}/releases/download/${RELEASE_TAG}/${encodeURIComponent(a.name)}`
+        };
     });
-    return {
-      statusCode: 200,
-      body: JSON.stringify({ items: list })
-    };
   } catch (err) {
     return { statusCode: 500, body: JSON.stringify({ error: err.message }) };
   }
