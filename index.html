@@ -3,134 +3,735 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>☁️ 云盘 (Release 存储)</title>
+    <title>☁️ 我的云盘 · Netlify 版</title>
     <!-- Font Awesome 6 -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" />
     <style>
-        /* ---------- 样式与之前保持一致，略作简化 ---------- */
-        * { margin:0; padding:0; box-sizing:border-box; }
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #f6f8fa; color: #1f2328; min-height:100vh; display:flex; justify-content:center; padding:30px 20px; }
-        .app { max-width:1100px; width:100%; background:#fff; border-radius:16px; box-shadow:0 8px 30px rgba(0,0,0,0.08); padding:28px 32px 40px; }
-        .header { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:16px; margin-bottom:24px; border-bottom:1px solid #eaeef2; padding-bottom:18px; }
-        .logo { display:flex; align-items:center; gap:10px; font-size:22px; font-weight:600; color:#0d1117; }
-        .logo i { color:#2d7aff; font-size:26px; }
-        .token-area { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
-        .token-area label { font-size:14px; font-weight:500; color:#57606a; }
-        .token-area input { padding:8px 14px; border:1.5px solid #d0d7de; border-radius:8px; font-size:14px; width:260px; background:#fafbfc; }
-        .token-area input:focus { border-color:#2d7aff; outline:none; box-shadow:0 0 0 3px rgba(45,122,255,0.15); }
-        .token-area .btn { padding:8px 18px; border:none; border-radius:8px; font-size:14px; font-weight:500; cursor:pointer; background:#2d7aff; color:#fff; }
-        .token-area .btn:hover { background:#1c6ae0; }
-        .token-status { font-size:13px; color:#3fb950; font-weight:500; display:flex; align-items:center; gap:4px; }
-        .nav-bar { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px; margin-bottom:18px; padding:6px 0; }
-        .path-display { display:flex; align-items:center; gap:6px; font-size:16px; font-weight:500; color:#1f2328; background:#f0f3f6; padding:6px 16px; border-radius:24px; flex:1; min-width:200px; overflow:hidden; white-space:nowrap; text-overflow:ellipsis; }
-        .path-display i { color:#6e7781; font-size:14px; }
-        .path-display .path-text { overflow:hidden; text-overflow:ellipsis; font-family: monospace; }
-        .nav-actions { display:flex; gap:10px; flex-wrap:wrap; }
-        .nav-actions .btn { padding:7px 18px; border:none; border-radius:20px; font-size:14px; font-weight:500; cursor:pointer; display:inline-flex; align-items:center; gap:6px; background:#f0f3f6; color:#1f2328; }
-        .nav-actions .btn:hover { background:#e1e6ec; }
-        .nav-actions .btn-primary { background:#2d7aff; color:#fff; }
-        .nav-actions .btn-primary:hover { background:#1c6ae0; }
-        .drop-zone { border:2.5px dashed #d0d7de; border-radius:14px; padding:36px 20px; text-align:center; color:#57606a; transition:border-color 0.25s, background 0.25s; margin-bottom:22px; background:#fafbfc; cursor:pointer; position:relative; }
-        .drop-zone.drag-over { border-color:#2d7aff; background:#f0f5ff; }
-        .drop-zone i { font-size:36px; color:#8d96a0; margin-bottom:8px; display:block; }
-        .drop-zone .hint { font-size:15px; font-weight:450; }
-        .drop-zone input[type="file"] { position:absolute; inset:0; opacity:0; cursor:pointer; }
-        .list-container { border:1px solid #eaeef2; border-radius:12px; overflow:hidden; background:#fff; }
-        .list-header { display:grid; grid-template-columns:40px 1fr 140px 120px 1fr; padding:10px 18px; background:#f6f8fa; font-size:13px; font-weight:600; color:#57606a; border-bottom:1px solid #eaeef2; gap:8px; align-items:center; }
-        .file-item { display:grid; grid-template-columns:40px 1fr 140px 120px 1fr; padding:10px 18px; align-items:center; gap:8px; border-bottom:1px solid #f0f3f6; transition:background 0.12s; }
-        .file-item:last-child { border-bottom:none; }
-        .file-item:hover { background:#f8faff; }
-        .file-item .icon { font-size:20px; text-align:center; display:flex; align-items:center; justify-content:center; width:32px; height:32px; color:#57606a; }
-        .file-item .icon.folder-icon { color:#54a0ff; }
-        .file-item .name { font-size:15px; font-weight:450; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-family: monospace; display:flex; align-items:center; gap:6px; }
-        .file-item .type { font-size:13px; color:#57606a; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-        .file-item .size { font-size:13px; color:#57606a; text-align:right; }
-        .file-item .actions { display:flex; gap:10px; justify-content:flex-end; flex-wrap:wrap; }
-        .file-item .actions .btn-sm { padding:2px 12px; border:1px solid #d0d7de; border-radius:16px; background:transparent; font-size:12px; cursor:pointer; transition:background 0.15s; color:#1f2328; font-weight:450; display:inline-flex; align-items:center; gap:4px; }
-        .file-item .actions .btn-sm:hover { background:#f0f3f6; border-color:#8d96a0; }
-        .file-item .actions .btn-sm.primary { border-color:#2d7aff; color:#2d7aff; }
-        .file-item .actions .btn-sm.primary:hover { background:#eef4ff; }
-        .file-item.is-folder { cursor:pointer; }
-        .file-item.is-folder:hover .name { color:#2d7aff; }
-        .empty-state { padding:48px 20px; text-align:center; color:#8d96a0; }
-        .empty-state i { font-size:44px; color:#d0d7de; margin-bottom:12px; display:block; }
-        .modal-overlay, .dialog-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.45); backdrop-filter:blur(6px); display:none; align-items:center; justify-content:center; z-index:1000; padding:24px; }
-        .modal-overlay.active, .dialog-overlay.active { display:flex; }
-        .modal, .dialog { background:#fff; border-radius:18px; max-width:780px; width:100%; max-height:90vh; display:flex; flex-direction:column; box-shadow:0 20px 60px rgba(0,0,0,0.25); animation:modalIn 0.2s ease; }
-        .dialog { max-width:420px; padding:28px 32px 32px; }
-        .modal-header { display:flex; align-items:center; justify-content:space-between; padding:18px 24px; border-bottom:1px solid #eaeef2; }
-        .modal-header h3 { font-size:17px; font-weight:600; display:flex; align-items:center; gap:10px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-        .modal-header .close-btn { background:none; border:none; font-size:22px; cursor:pointer; color:#57606a; padding:4px 8px; border-radius:8px; }
-        .modal-header .close-btn:hover { background:#f0f3f6; }
-        .modal-body { padding:24px; overflow-y:auto; flex:1; font-size:14px; line-height:1.6; white-space:pre-wrap; word-break:break-word; font-family: monospace; min-height:120px; max-height:60vh; }
-        .modal-body img { max-width:100%; height:auto; border-radius:8px; display:block; margin:0 auto; }
-        .modal-footer { padding:14px 24px; border-top:1px solid #eaeef2; display:flex; justify-content:flex-end; gap:12px; }
-        .modal-footer .btn, .dialog .dialog-actions .btn { padding:8px 22px; border:none; border-radius:20px; font-size:14px; font-weight:500; cursor:pointer; transition:background 0.15s; background:#f0f3f6; color:#1f2328; }
-        .modal-footer .btn-primary, .dialog .dialog-actions .btn-confirm { background:#2d7aff; color:#fff; }
-        .modal-footer .btn-primary:hover, .dialog .dialog-actions .btn-confirm:hover { background:#1c6ae0; }
-        .dialog h3 { font-size:18px; font-weight:600; margin-bottom:6px; }
-        .dialog p { color:#57606a; font-size:14px; margin-bottom:18px; }
-        .dialog input { width:100%; padding:10px 14px; border:1.5px solid #d0d7de; border-radius:10px; font-size:15px; background:#fafbfc; }
-        .dialog input:focus { border-color:#2d7aff; outline:none; box-shadow:0 0 0 3px rgba(45,122,255,0.12); }
-        .dialog .dialog-actions { display:flex; justify-content:flex-end; gap:12px; margin-top:22px; }
-        .toast-container { position:fixed; bottom:28px; left:50%; transform:translateX(-50%); z-index:2000; display:flex; flex-direction:column; align-items:center; gap:8px; pointer-events:none; }
-        .toast { background:#1f2328; color:#fff; padding:10px 24px; border-radius:30px; font-size:14px; font-weight:450; box-shadow:0 6px 24px rgba(0,0,0,0.18); pointer-events:auto; animation:toastIn 0.25s ease; display:flex; align-items:center; gap:10px; }
-        .toast i { font-size:16px; }
-        .toast.success i { color:#3fb950; }
-        .toast.error i { color:#f85149; }
-        .toast.info i { color:#58a6ff; }
-        @keyframes modalIn { from { opacity:0; transform:translateY(20px) scale(0.96); } to { opacity:1; transform:translateY(0) scale(1); } }
-        @keyframes toastIn { from { opacity:0; transform:translateY(20px) scale(0.94); } to { opacity:1; transform:translateY(0) scale(1); } }
-        @media (max-width:780px) {
-            .app { padding:16px 14px 28px; }
-            .header { flex-direction:column; align-items:stretch; }
-            .token-area input { width:100%; }
-            .list-header { display:none; }
-            .file-item { grid-template-columns:36px 1fr auto; padding:12px 14px; gap:6px 10px; }
-            .file-item .type { display:none; }
-            .file-item .size { grid-column:3; grid-row:1; text-align:right; font-size:12px; color:#8d96a0; }
-            .file-item .actions { grid-column:1/-1; grid-row:2; justify-content:flex-start; padding-top:4px; gap:6px; }
-            .nav-bar { flex-direction:column; align-items:stretch; }
-            .nav-actions .btn { flex:1; justify-content:center; }
+        /* ===== 全局样式 ===== */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background: #f6f8fa;
+            color: #1f2328;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            padding: 30px 20px;
+        }
+        .app {
+            max-width: 1100px;
+            width: 100%;
+            background: #ffffff;
+            border-radius: 16px;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08);
+            padding: 28px 32px 40px;
+        }
+        .header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 16px;
+            margin-bottom: 24px;
+            border-bottom: 1px solid #eaeef2;
+            padding-bottom: 18px;
+        }
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 22px;
+            font-weight: 600;
+            color: #0d1117;
+        }
+        .logo i {
+            color: #2d7aff;
+            font-size: 26px;
+        }
+        .token-area {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        .token-area label {
+            font-size: 14px;
+            font-weight: 500;
+            color: #57606a;
+        }
+        .token-area .status {
+            font-size: 13px;
+            color: #3fb950;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .token-area .status i {
+            font-size: 14px;
+        }
+        .nav-bar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-bottom: 18px;
+            padding: 6px 0;
+        }
+        .path-display {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 16px;
+            font-weight: 500;
+            color: #1f2328;
+            background: #f0f3f6;
+            padding: 6px 16px;
+            border-radius: 24px;
+            flex: 1;
+            min-width: 200px;
+            overflow: hidden;
+            white-space: nowrap;
+            text-overflow: ellipsis;
+        }
+        .path-display i {
+            color: #6e7781;
+            font-size: 14px;
+        }
+        .path-display .path-text {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            font-family: "SF Mono", "Cascadia Code", monospace;
+            font-size: 15px;
+        }
+        .nav-actions {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        .nav-actions .btn {
+            padding: 7px 18px;
+            border: none;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: #f0f3f6;
+            color: #1f2328;
+            transition: background 0.2s, transform 0.1s;
+        }
+        .nav-actions .btn:hover {
+            background: #e1e6ec;
+        }
+        .nav-actions .btn-primary {
+            background: #2d7aff;
+            color: #fff;
+        }
+        .nav-actions .btn-primary:hover {
+            background: #1c6ae0;
+        }
+        .nav-actions .btn:active {
+            transform: scale(0.95);
+        }
+        .drop-zone {
+            border: 2.5px dashed #d0d7de;
+            border-radius: 14px;
+            padding: 36px 20px;
+            text-align: center;
+            color: #57606a;
+            transition: border-color 0.25s, background 0.25s;
+            margin-bottom: 22px;
+            background: #fafbfc;
+            cursor: pointer;
+            position: relative;
+        }
+        .drop-zone.drag-over {
+            border-color: #2d7aff;
+            background: #f0f5ff;
+        }
+        .drop-zone i {
+            font-size: 36px;
+            color: #8d96a0;
+            margin-bottom: 8px;
+            display: block;
+        }
+        .drop-zone .hint {
+            font-size: 15px;
+            font-weight: 450;
+        }
+        .drop-zone .sub-hint {
+            font-size: 13px;
+            color: #8d96a0;
+            margin-top: 4px;
+        }
+        .drop-zone input[type="file"] {
+            position: absolute;
+            inset: 0;
+            opacity: 0;
+            cursor: pointer;
+        }
+        .list-container {
+            border: 1px solid #eaeef2;
+            border-radius: 12px;
+            overflow: hidden;
+            background: #ffffff;
+        }
+        .list-header {
+            display: grid;
+            grid-template-columns: 40px 1fr 140px 120px 1fr;
+            padding: 10px 18px;
+            background: #f6f8fa;
+            font-size: 13px;
+            font-weight: 600;
+            color: #57606a;
+            border-bottom: 1px solid #eaeef2;
+            gap: 8px;
+            align-items: center;
+        }
+        .list-header span:last-child {
+            text-align: right;
+        }
+        .file-item {
+            display: grid;
+            grid-template-columns: 40px 1fr 140px 120px 1fr;
+            padding: 10px 18px;
+            align-items: center;
+            gap: 8px;
+            border-bottom: 1px solid #f0f3f6;
+            transition: background 0.12s;
+        }
+        .file-item:last-child {
+            border-bottom: none;
+        }
+        .file-item:hover {
+            background: #f8faff;
+        }
+        .file-item .icon {
+            font-size: 20px;
+            text-align: center;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 32px;
+            height: 32px;
+            flex-shrink: 0;
+            color: #57606a;
+        }
+        .file-item .icon.folder-icon {
+            color: #54a0ff;
+        }
+        .file-item .name {
+            font-size: 15px;
+            font-weight: 450;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            font-family: "SF Mono", "Cascadia Code", monospace;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .file-item .name .ext-badge {
+            font-size: 11px;
+            background: #eaeef2;
+            padding: 0 8px;
+            border-radius: 12px;
+            color: #57606a;
+            font-weight: 400;
+        }
+        .file-item .type {
+            font-size: 13px;
+            color: #57606a;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .file-item .size {
+            font-size: 13px;
+            color: #57606a;
+            text-align: right;
+            font-feature-settings: "tnum";
+        }
+        .file-item .actions {
+            display: flex;
+            gap: 8px;
+            justify-content: flex-end;
+            flex-wrap: wrap;
+        }
+        .file-item .actions .btn-sm {
+            padding: 2px 12px;
+            border: 1px solid #d0d7de;
+            border-radius: 16px;
+            background: transparent;
+            font-size: 12px;
+            cursor: pointer;
+            transition: background 0.15s, color 0.15s, border-color 0.15s;
+            color: #1f2328;
+            font-weight: 450;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .file-item .actions .btn-sm:hover {
+            background: #f0f3f6;
+            border-color: #8d96a0;
+        }
+        .file-item .actions .btn-sm.primary {
+            border-color: #2d7aff;
+            color: #2d7aff;
+        }
+        .file-item .actions .btn-sm.primary:hover {
+            background: #eef4ff;
+            border-color: #1c6ae0;
+        }
+        .file-item .actions .btn-sm.danger {
+            border-color: #cf222e;
+            color: #cf222e;
+        }
+        .file-item .actions .btn-sm.danger:hover {
+            background: #ffebe9;
+            border-color: #a0111f;
+        }
+        .file-item .actions .btn-sm:active {
+            transform: scale(0.94);
+        }
+        .file-item.is-folder {
+            cursor: pointer;
+        }
+        .file-item.is-folder:hover .name {
+            color: #2d7aff;
+        }
+        .empty-state {
+            padding: 48px 20px;
+            text-align: center;
+            color: #8d96a0;
+        }
+        .empty-state i {
+            font-size: 44px;
+            color: #d0d7de;
+            margin-bottom: 12px;
+            display: block;
+        }
+        .empty-state p {
+            font-size: 15px;
+        }
+        /* 模态框 */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.45);
+            backdrop-filter: blur(6px);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            padding: 24px;
+        }
+        .modal-overlay.active {
+            display: flex;
+        }
+        .modal {
+            background: #ffffff;
+            border-radius: 18px;
+            max-width: 780px;
+            width: 100%;
+            max-height: 90vh;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25);
+            animation: modalIn 0.2s ease;
+        }
+        @keyframes modalIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px) scale(0.96);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+        .modal-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 18px 24px;
+            border-bottom: 1px solid #eaeef2;
+        }
+        .modal-header h3 {
+            font-size: 17px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .modal-header h3 i {
+            color: #2d7aff;
+        }
+        .modal-header .close-btn {
+            background: none;
+            border: none;
+            font-size: 22px;
+            cursor: pointer;
+            color: #57606a;
+            padding: 4px 8px;
+            border-radius: 8px;
+            transition: background 0.15s;
+        }
+        .modal-header .close-btn:hover {
+            background: #f0f3f6;
+        }
+        .modal-body {
+            padding: 24px;
+            overflow-y: auto;
+            flex: 1;
+            font-size: 14px;
+            line-height: 1.6;
+            white-space: pre-wrap;
+            word-break: break-word;
+            font-family: "SF Mono", "Cascadia Code", monospace;
+            min-height: 120px;
+            max-height: 60vh;
+        }
+        .modal-body img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 8px;
+            display: block;
+            margin: 0 auto;
+        }
+        .modal-footer {
+            padding: 14px 24px;
+            border-top: 1px solid #eaeef2;
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+        }
+        .modal-footer .btn {
+            padding: 8px 22px;
+            border: none;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background 0.15s;
+            background: #f0f3f6;
+            color: #1f2328;
+        }
+        .modal-footer .btn-primary {
+            background: #2d7aff;
+            color: #fff;
+        }
+        .modal-footer .btn-primary:hover {
+            background: #1c6ae0;
+        }
+        .modal-footer .btn:hover {
+            background: #e1e6ec;
+        }
+        /* 对话框 */
+        .dialog-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.40);
+            backdrop-filter: blur(4px);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1100;
+            padding: 24px;
+        }
+        .dialog-overlay.active {
+            display: flex;
+        }
+        .dialog {
+            background: #ffffff;
+            border-radius: 18px;
+            padding: 28px 32px 32px;
+            max-width: 420px;
+            width: 100%;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25);
+            animation: modalIn 0.2s ease;
+        }
+        .dialog h3 {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 6px;
+        }
+        .dialog p {
+            color: #57606a;
+            font-size: 14px;
+            margin-bottom: 18px;
+        }
+        .dialog input {
+            width: 100%;
+            padding: 10px 14px;
+            border: 1.5px solid #d0d7de;
+            border-radius: 10px;
+            font-size: 15px;
+            background: #fafbfc;
+            transition: border 0.2s;
+            font-family: inherit;
+        }
+        .dialog input:focus {
+            border-color: #2d7aff;
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(45, 122, 255, 0.12);
+        }
+        .dialog .dialog-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+            margin-top: 22px;
+        }
+        .dialog .dialog-actions .btn {
+            padding: 8px 24px;
+            border: none;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background 0.15s;
+        }
+        .dialog .dialog-actions .btn-cancel {
+            background: #f0f3f6;
+            color: #1f2328;
+        }
+        .dialog .dialog-actions .btn-cancel:hover {
+            background: #e1e6ec;
+        }
+        .dialog .dialog-actions .btn-confirm {
+            background: #2d7aff;
+            color: #fff;
+        }
+        .dialog .dialog-actions .btn-confirm:hover {
+            background: #1c6ae0;
+        }
+        /* Toast */
+        .toast-container {
+            position: fixed;
+            bottom: 28px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 2000;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            pointer-events: none;
+        }
+        .toast {
+            background: #1f2328;
+            color: #ffffff;
+            padding: 10px 24px;
+            border-radius: 30px;
+            font-size: 14px;
+            font-weight: 450;
+            box-shadow: 0 6px 24px rgba(0, 0, 0, 0.18);
+            pointer-events: auto;
+            animation: toastIn 0.25s ease;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .toast i {
+            font-size: 16px;
+        }
+        .toast.success i {
+            color: #3fb950;
+        }
+        .toast.error i {
+            color: #f85149;
+        }
+        .toast.info i {
+            color: #58a6ff;
+        }
+        @keyframes toastIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px) scale(0.94);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+        /* 响应式 */
+        @media (max-width: 780px) {
+            .app {
+                padding: 16px 14px 28px;
+            }
+            .header {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            .token-area {
+                flex-wrap: wrap;
+            }
+            .list-header {
+                display: none;
+            }
+            .file-item {
+                grid-template-columns: 36px 1fr auto;
+                padding: 12px 14px;
+                gap: 6px 10px;
+                border-bottom: 1px solid #f0f3f6;
+            }
+            .file-item .type {
+                display: none;
+            }
+            .file-item .size {
+                grid-column: 3;
+                grid-row: 1;
+                text-align: right;
+                font-size: 12px;
+                color: #8d96a0;
+            }
+            .file-item .actions {
+                grid-column: 1 / -1;
+                grid-row: 2;
+                justify-content: flex-start;
+                padding-top: 4px;
+                gap: 6px;
+            }
+            .file-item .icon {
+                width: 28px;
+                height: 28px;
+                font-size: 18px;
+            }
+            .file-item .name {
+                font-size: 14px;
+            }
+            .nav-bar {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            .path-display {
+                width: 100%;
+            }
+            .nav-actions {
+                justify-content: stretch;
+            }
+            .nav-actions .btn {
+                flex: 1;
+                justify-content: center;
+            }
+            .drop-zone {
+                padding: 24px 12px;
+            }
+            .modal {
+                max-width: 96%;
+                max-height: 92vh;
+            }
+            .modal-body {
+                font-size: 13px;
+                padding: 16px;
+            }
+        }
+        @media (max-width: 480px) {
+            .file-item .actions .btn-sm {
+                font-size: 11px;
+                padding: 2px 10px;
+            }
+            .file-item .actions .btn-sm span {
+                display: none;
+            }
+            .file-item .actions .btn-sm i {
+                font-size: 13px;
+            }
+        }
+        .modal-body::-webkit-scrollbar {
+            width: 5px;
+        }
+        .modal-body::-webkit-scrollbar-track {
+            background: #f0f3f6;
+            border-radius: 4px;
+        }
+        .modal-body::-webkit-scrollbar-thumb {
+            background: #d0d7de;
+            border-radius: 4px;
+        }
+        .modal-body::-webkit-scrollbar-thumb:hover {
+            background: #b0b8c0;
         }
     </style>
 </head>
 <body>
-    <div class="app">
+    <div class="app" id="app">
+        <!-- 头部 -->
         <div class="header">
-            <div class="logo"><i class="fas fa-cloud"></i><span>我的云盘 (Release)</span></div>
-            <div class="token-area" id="tokenArea">
-                <label for="tokenInput"><i class="fas fa-key"></i> Token</label>
-                <input type="password" id="tokenInput" placeholder="输入 GitHub Token (repo 权限)" />
-                <button class="btn" id="connectBtn">连接</button>
-                <span class="token-status" id="tokenStatus" style="display:none;"><i class="fas fa-check-circle"></i> 已连接</span>
+            <div class="logo">
+                <i class="fas fa-cloud"></i>
+                <span>我的云盘</span>
+                <span style="font-size:13px;font-weight:400;color:#8d96a0;margin-left:2px;">· Netlify</span>
+            </div>
+            <div class="token-area">
+                <span class="status" id="statusBadge"><i class="fas fa-check-circle"></i> 已连接</span>
             </div>
         </div>
+
+        <!-- 导航 -->
         <div class="nav-bar">
-            <div class="path-display"><i class="fas fa-folder-open"></i><span class="path-text" id="pathDisplay">/</span></div>
+            <div class="path-display">
+                <i class="fas fa-folder-open"></i>
+                <span class="path-text" id="pathDisplay">/</span>
+            </div>
             <div class="nav-actions">
                 <button class="btn" id="refreshBtn"><i class="fas fa-rotate"></i> 刷新</button>
                 <button class="btn btn-primary" id="newFolderBtn"><i class="fas fa-folder-plus"></i> 新建文件夹</button>
             </div>
         </div>
+
+        <!-- 上传区域 -->
         <div class="drop-zone" id="dropZone">
             <i class="fas fa-cloud-upload-alt"></i>
             <div class="hint">拖动文件到此处上传</div>
-            <div class="sub-hint" style="font-size:13px;color:#8d96a0;margin-top:4px;">支持大文件 (最大 2GB)</div>
+            <div class="sub-hint">或点击选择文件 · 上传到当前文件夹</div>
             <input type="file" id="fileInput" multiple />
         </div>
+
+        <!-- 文件列表 -->
         <div class="list-container">
-            <div class="list-header"><span></span><span>名称</span><span>类型</span><span>大小</span><span>操作</span></div>
-            <div id="fileList"><div class="empty-state"><i class="fas fa-inbox"></i><p>请先连接 Token</p></div></div>
+            <div class="list-header">
+                <span></span>
+                <span>名称</span>
+                <span>类型</span>
+                <span>大小</span>
+                <span>操作</span>
+            </div>
+            <div id="fileList">
+                <div class="empty-state">
+                    <i class="fas fa-inbox"></i>
+                    <p>加载中…</p>
+                </div>
+            </div>
         </div>
     </div>
 
     <!-- 预览模态框 -->
     <div class="modal-overlay" id="previewModal">
         <div class="modal">
-            <div class="modal-header"><h3 id="previewTitle"><i class="fas fa-file"></i> 预览</h3><button class="close-btn" id="previewCloseBtn">&times;</button></div>
-            <div class="modal-body" id="previewBody"><div class="preview-fallback">加载中…</div></div>
-            <div class="modal-footer"><button class="btn" id="previewDownloadBtn"><i class="fas fa-download"></i> 下载</button><button class="btn btn-primary" id="previewCloseBtn2">关闭</button></div>
+            <div class="modal-header">
+                <h3 id="previewTitle"><i class="fas fa-file"></i> 文件预览</h3>
+                <button class="close-btn" id="previewCloseBtn">&times;</button>
+            </div>
+            <div class="modal-body" id="previewBody">
+                <div class="preview-fallback">加载中…</div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn" id="previewDownloadBtn"><i class="fas fa-download"></i> 下载</button>
+                <button class="btn btn-primary" id="previewCloseBtn2">关闭</button>
+            </div>
         </div>
     </div>
 
@@ -139,11 +740,15 @@
         <div class="dialog">
             <h3><i class="fas fa-folder-plus" style="color:#2d7aff;"></i> 新建文件夹</h3>
             <p>在当前路径下创建新文件夹</p>
-            <input type="text" id="folderNameInput" placeholder="输入文件夹名称" />
-            <div class="dialog-actions"><button class="btn" id="dialogCancelBtn">取消</button><button class="btn btn-confirm" id="dialogConfirmBtn">创建</button></div>
+            <input type="text" id="folderNameInput" placeholder="输入文件夹名称" autofocus />
+            <div class="dialog-actions">
+                <button class="btn btn-cancel" id="dialogCancelBtn">取消</button>
+                <button class="btn btn-confirm" id="dialogConfirmBtn">创建</button>
+            </div>
         </div>
     </div>
 
+    <!-- Toast 容器 -->
     <div class="toast-container" id="toastContainer"></div>
 
     <script>
@@ -151,35 +756,57 @@
             'use strict';
 
             // ============================================================
-            //  配置 ———— 请修改为你的仓库信息
+            //  配置（后端 Functions 端点）
             // ============================================================
-            const REPO_OWNER = 'CB-X2-Jun';
-            const REPO_NAME = 'Ccloud-files';
-            const RELEASE_TAG = 'cloud-files';  // 固定使用的 Release 标签
-            const BRANCH = 'main';
+            const API_BASE = '/.netlify/functions';
 
             // ============================================================
-            //  文件类型映射 (与之前相同)
+            //  文件类型映射（用于 UI 显示）
             // ============================================================
             const TYPE_MAP = {
                 'txt': { name: '文本文件', icon: 'fa-regular fa-file-lines', preview: true },
                 'log': { name: '日志文件', icon: 'fa-regular fa-file-lines', preview: true },
                 'md': { name: 'Markdown', icon: 'fa-regular fa-file-lines', preview: true },
                 'json': { name: 'JSON 数据', icon: 'fa-regular fa-file-code', preview: true },
+                'xml': { name: 'XML 文档', icon: 'fa-regular fa-file-code', preview: true },
+                'yaml': { name: 'YAML 配置', icon: 'fa-regular fa-file-code', preview: true },
+                'yml': { name: 'YAML 配置', icon: 'fa-regular fa-file-code', preview: true },
+                'toml': { name: 'TOML 配置', icon: 'fa-regular fa-file-code', preview: true },
+                'csv': { name: 'CSV 表格', icon: 'fa-regular fa-file-csv', preview: true },
                 'js': { name: 'JavaScript 源码', icon: 'fa-brands fa-js', preview: true },
                 'ts': { name: 'TypeScript 源码', icon: 'fa-regular fa-file-code', preview: true },
+                'jsx': { name: 'React JSX', icon: 'fa-brands fa-react', preview: true },
+                'tsx': { name: 'React TSX', icon: 'fa-brands fa-react', preview: true },
                 'html': { name: 'HTML 文档', icon: 'fa-brands fa-html5', preview: true },
                 'css': { name: 'CSS 样式', icon: 'fa-brands fa-css3-alt', preview: true },
+                'scss': { name: 'SCSS 样式', icon: 'fa-regular fa-file-code', preview: true },
+                'less': { name: 'Less 样式', icon: 'fa-regular fa-file-code', preview: true },
                 'py': { name: 'Python 源码', icon: 'fa-brands fa-python', preview: true },
                 'java': { name: 'Java 源码', icon: 'fa-brands fa-java', preview: true },
+                'c': { name: 'C 源码', icon: 'fa-regular fa-file-code', preview: true },
                 'cpp': { name: 'C++ 源码', icon: 'fa-regular fa-file-code', preview: true },
+                'h': { name: 'C/C++ 头文件', icon: 'fa-regular fa-file-code', preview: true },
+                'hpp': { name: 'C++ 头文件', icon: 'fa-regular fa-file-code', preview: true },
                 'go': { name: 'Go 源码', icon: 'fa-brands fa-golang', preview: true },
                 'rs': { name: 'Rust 源码', icon: 'fa-regular fa-file-code', preview: true },
                 'php': { name: 'PHP 源码', icon: 'fa-brands fa-php', preview: true },
+                'rb': { name: 'Ruby 源码', icon: 'fa-regular fa-file-code', preview: true },
+                'swift': { name: 'Swift 源码', icon: 'fa-regular fa-file-code', preview: true },
+                'kt': { name: 'Kotlin 源码', icon: 'fa-regular fa-file-code', preview: true },
+                'dart': { name: 'Dart 源码', icon: 'fa-regular fa-file-code', preview: true },
+                'lua': { name: 'Lua 脚本', icon: 'fa-regular fa-file-code', preview: true },
+                'r': { name: 'R 源码', icon: 'fa-regular fa-file-code', preview: true },
+                'sql': { name: 'SQL 查询', icon: 'fa-regular fa-database', preview: true },
                 'sh': { name: 'Shell 脚本', icon: 'fa-regular fa-terminal', preview: true },
+                'bash': { name: 'Bash 脚本', icon: 'fa-regular fa-terminal', preview: true },
+                'zsh': { name: 'Zsh 脚本', icon: 'fa-regular fa-terminal', preview: true },
+                'ps1': { name: 'PowerShell 脚本', icon: 'fa-regular fa-terminal', preview: true },
                 'pdf': { name: 'PDF 文档', icon: 'fa-regular fa-file-pdf', preview: false },
+                'doc': { name: 'Word 文档', icon: 'fa-regular fa-file-word', preview: false },
                 'docx': { name: 'Word 文档', icon: 'fa-regular fa-file-word', preview: false },
+                'xls': { name: 'Excel 表格', icon: 'fa-regular fa-file-excel', preview: false },
                 'xlsx': { name: 'Excel 表格', icon: 'fa-regular fa-file-excel', preview: false },
+                'ppt': { name: 'PowerPoint 演示', icon: 'fa-regular fa-file-powerpoint', preview: false },
                 'pptx': { name: 'PowerPoint 演示', icon: 'fa-regular fa-file-powerpoint', preview: false },
                 'jpg': { name: 'JPEG 图片', icon: 'fa-regular fa-file-image', preview: true },
                 'jpeg': { name: 'JPEG 图片', icon: 'fa-regular fa-file-image', preview: true },
@@ -187,12 +814,31 @@
                 'gif': { name: 'GIF 动画', icon: 'fa-regular fa-file-image', preview: true },
                 'svg': { name: 'SVG 矢量图', icon: 'fa-regular fa-file-image', preview: true },
                 'webp': { name: 'WebP 图片', icon: 'fa-regular fa-file-image', preview: true },
+                'bmp': { name: 'BMP 位图', icon: 'fa-regular fa-file-image', preview: true },
+                'ico': { name: '图标文件', icon: 'fa-regular fa-file-image', preview: true },
                 'mp3': { name: 'MP3 音频', icon: 'fa-regular fa-file-audio', preview: false },
+                'wav': { name: 'WAV 音频', icon: 'fa-regular fa-file-audio', preview: false },
+                'flac': { name: 'FLAC 音频', icon: 'fa-regular fa-file-audio', preview: false },
+                'aac': { name: 'AAC 音频', icon: 'fa-regular fa-file-audio', preview: false },
+                'ogg': { name: 'OGG 音频', icon: 'fa-regular fa-file-audio', preview: false },
                 'mp4': { name: 'MP4 视频', icon: 'fa-regular fa-file-video', preview: false },
+                'avi': { name: 'AVI 视频', icon: 'fa-regular fa-file-video', preview: false },
+                'mov': { name: 'MOV 视频', icon: 'fa-regular fa-file-video', preview: false },
+                'wmv': { name: 'WMV 视频', icon: 'fa-regular fa-file-video', preview: false },
+                'mkv': { name: 'MKV 视频', icon: 'fa-regular fa-file-video', preview: false },
+                'webm': { name: 'WebM 视频', icon: 'fa-regular fa-file-video', preview: false },
                 'zip': { name: 'ZIP 压缩包', icon: 'fa-regular fa-file-zipper', preview: false },
                 'rar': { name: 'RAR 压缩包', icon: 'fa-regular fa-file-zipper', preview: false },
                 '7z': { name: '7-Zip 压缩包', icon: 'fa-regular fa-file-zipper', preview: false },
+                'tar': { name: 'TAR 归档', icon: 'fa-regular fa-file-zipper', preview: false },
+                'gz': { name: 'GZ 压缩', icon: 'fa-regular fa-file-zipper', preview: false },
+                'bz2': { name: 'BZ2 压缩', icon: 'fa-regular fa-file-zipper', preview: false },
                 'exe': { name: '应用程序', icon: 'fa-regular fa-file', preview: false },
+                'msi': { name: '安装包', icon: 'fa-regular fa-file', preview: false },
+                'app': { name: '应用程序', icon: 'fa-regular fa-file', preview: false },
+                'dmg': { name: '磁盘镜像', icon: 'fa-regular fa-file', preview: false },
+                'deb': { name: 'Debian 包', icon: 'fa-regular fa-file', preview: false },
+                'rpm': { name: 'RPM 包', icon: 'fa-regular fa-file', preview: false },
                 'gitkeep': { name: '占位文件', icon: 'fa-regular fa-file', preview: false },
             };
             const UNKNOWN_TYPE = { name: '未知文件类型', icon: 'fa-regular fa-file', preview: true };
@@ -200,33 +846,32 @@
             // ============================================================
             //  状态
             // ============================================================
-            let token = localStorage.getItem('gh_token') || '';
             let currentPath = '/';
-            let fileList = [];
-            let previewData = null;
-            let releaseId = null; // 缓存 Release ID
+            let allAssets = []; // 缓存所有资产 { name, size, download_url }
 
             // DOM 引用
             const $ = (s) => document.querySelector(s);
-            const tokenInput = $('#tokenInput');
-            const connectBtn = $('#connectBtn');
-            const tokenStatus = $('#tokenStatus');
+            const $$ = (s) => document.querySelectorAll(s);
+
             const pathDisplay = $('#pathDisplay');
             const fileListEl = $('#fileList');
             const refreshBtn = $('#refreshBtn');
             const newFolderBtn = $('#newFolderBtn');
             const dropZone = $('#dropZone');
             const fileInput = $('#fileInput');
+
             const previewModal = $('#previewModal');
             const previewTitle = $('#previewTitle');
             const previewBody = $('#previewBody');
             const previewCloseBtn = $('#previewCloseBtn');
             const previewCloseBtn2 = $('#previewCloseBtn2');
             const previewDownloadBtn = $('#previewDownloadBtn');
+
             const newFolderDialog = $('#newFolderDialog');
             const folderNameInput = $('#folderNameInput');
             const dialogCancelBtn = $('#dialogCancelBtn');
             const dialogConfirmBtn = $('#dialogConfirmBtn');
+
             const toastContainer = $('#toastContainer');
 
             // ============================================================
@@ -237,7 +882,7 @@
                 const k = 1024;
                 const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
                 const i = Math.floor(Math.log(bytes) / Math.log(k));
-                const val = bytes / Math.pow(k, i);
+                const val = (bytes / Math.pow(k, i));
                 return (i === 0 ? val : val.toFixed(2)) + ' ' + sizes[i];
             }
 
@@ -249,7 +894,9 @@
             }
 
             function getIconHtml(filename, isFolder) {
-                if (isFolder) return '<i class="fas fa-folder" style="color:#54a0ff;"></i>';
+                if (isFolder) {
+                    return '<i class="fas fa-folder" style="color:#54a0ff;"></i>';
+                }
                 const info = getFileType(filename);
                 return `<i class="${info.icon}"></i>`;
             }
@@ -288,11 +935,6 @@
                 return '/' + parts.join('/');
             }
 
-            function getFileNameFromPath(path) {
-                const parts = path.split('/').filter(Boolean);
-                return parts[parts.length - 1] || '';
-            }
-
             function escapeHtml(text) {
                 const div = document.createElement('div');
                 div.textContent = text;
@@ -302,197 +944,121 @@
             // ============================================================
             //  Toast
             // ============================================================
-            function showToast(msg, type = 'info', duration = 3200) {
-                const icons = { success: 'fa-check-circle', error: 'fa-exclamation-circle', info: 'fa-info-circle' };
+            function showToast(message, type = 'info', duration = 3200) {
+                const iconMap = {
+                    success: 'fa-check-circle',
+                    error: 'fa-exclamation-circle',
+                    info: 'fa-info-circle',
+                };
                 const el = document.createElement('div');
                 el.className = `toast ${type}`;
-                el.innerHTML = `<i class="fas ${icons[type] || icons.info}"></i> ${msg}`;
+                el.innerHTML = `<i class="fas ${iconMap[type] || iconMap.info}"></i> ${message}`;
                 toastContainer.appendChild(el);
-                setTimeout(() => { if (el.parentNode) el.remove(); }, duration);
+                setTimeout(() => {
+                    if (el.parentNode) el.remove();
+                }, duration);
             }
 
             // ============================================================
-            //  GitHub API 操作 (Release 方式)
+            //  API 调用（Netlify Functions）
             // ============================================================
-            function getHeaders() {
-                if (!token) throw new Error('未提供 Token');
-                return { 'Authorization': `token ${token}`, 'Accept': 'application/vnd.github.v3+json' };
-            }
-
-            // 获取或创建 Release (固定 tag)
-            async function getOrCreateRelease() {
-                if (releaseId) return releaseId;
-                try {
-                    // 尝试获取 release
-                    const url = `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/releases/tags/${RELEASE_TAG}`;
-                    const resp = await fetch(url, { headers: getHeaders() });
-                    if (resp.ok) {
-                        const data = await resp.json();
-                        releaseId = data.id;
-                        return releaseId;
-                    }
-                    // 不存在则创建
-                    const createUrl = `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/releases`;
-                    const body = {
-                        tag_name: RELEASE_TAG,
-                        name: `Cloud Files (${RELEASE_TAG})`,
-                        body: '自动创建的 Release，用于存储云盘文件',
-                        draft: false,
-                        prerelease: false,
-                    };
-                    const createResp = await fetch(createUrl, {
-                        method: 'POST',
-                        headers: { ...getHeaders(), 'Content-Type': 'application/json' },
-                        body: JSON.stringify(body),
-                    });
-                    if (!createResp.ok) {
-                        const err = await createResp.json();
-                        throw new Error(err.message || '创建 Release 失败');
-                    }
-                    const data = await createResp.json();
-                    releaseId = data.id;
-                    return releaseId;
-                } catch (e) {
-                    console.error('getOrCreateRelease error:', e);
-                    throw e;
+            async function fetchList() {
+                const resp = await fetch(`${API_BASE}/list`);
+                if (!resp.ok) {
+                    const err = await resp.json().catch(() => ({}));
+                    throw new Error(err.error || `列表获取失败 (${resp.status})`);
                 }
+                const data = await resp.json();
+                return data.items || [];
             }
 
-            // 获取 Release 的所有资产 (用于构建文件列表)
-            async function fetchAssets() {
-                const id = await getOrCreateRelease();
-                const url = `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/releases/${id}/assets`;
-                const resp = await fetch(url, { headers: getHeaders() });
-                if (!resp.ok) throw new Error('获取资产列表失败');
-                return resp.json();
-            }
-
-            // 上传文件 (作为 Release 资产)
-            async function uploadAsset(file, path) {
-                const id = await getOrCreateRelease();
-                // 1. 检查是否存在同名资产，若有则先删除
-                const assets = await fetchAssets();
-                const exist = assets.find(a => a.name === path);
-                if (exist) {
-                    // 删除旧资产
-                    const delUrl = `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/releases/assets/${exist.id}`;
-                    await fetch(delUrl, { method: 'DELETE', headers: getHeaders() });
-                }
-
-                // 2. 上传新资产 (使用 multipart/form-data)
-                const uploadUrl = `https://uploads.github.com/repos/${REPO_OWNER}/${REPO_NAME}/releases/${id}/assets?name=${encodeURIComponent(path)}&label=`;
-                const formData = new FormData();
-                formData.append('file', file, path);
-
-                const resp = await fetch(uploadUrl, {
+            async function uploadFileViaFunction(path, base64Content) {
+                const resp = await fetch(`${API_BASE}/upload`, {
                     method: 'POST',
-                    headers: { ...getHeaders(), 'Content-Type': 'multipart/form-data' }, // 注意：需去掉 Content-Type 让浏览器自动设置
-                    body: formData,
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ path, content: base64Content })
                 });
                 if (!resp.ok) {
-                    let msg = '上传失败';
-                    try { const err = await resp.json();
-                        msg = err.message || msg; } catch (_) {}
-                    throw new Error(msg);
+                    const err = await resp.json().catch(() => ({}));
+                    throw new Error(err.error || `上传失败 (${resp.status})`);
                 }
                 return resp.json();
             }
 
-            // 删除资产 (通过路径)
-            async function deleteAssetByPath(path) {
-                const assets = await fetchAssets();
-                const exist = assets.find(a => a.name === path);
-                if (!exist) throw new Error('文件不存在');
-                const delUrl = `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/releases/assets/${exist.id}`;
-                const resp = await fetch(delUrl, { method: 'DELETE', headers: getHeaders() });
-                if (!resp.ok) throw new Error('删除失败');
-            }
-
-            // 获取文件下载 URL (直接使用 release 下载链接)
-            function getDownloadUrl(path) {
-                return `https://github.com/${REPO_OWNER}/${REPO_NAME}/releases/download/${RELEASE_TAG}/${encodeURIComponent(path)}`;
-            }
-
-            // 获取文件内容 (用于预览)
-            async function fetchRawContent(path) {
-                const url = getDownloadUrl(path);
-                const resp = await fetch(url, { headers: { 'Authorization': `token ${token}` } });
-                if (!resp.ok) throw new Error('获取内容失败');
-                return resp.text();
-            }
-
-            // 获取文件 Blob (用于下载)
-            async function fetchRawBlob(path) {
-                const url = getDownloadUrl(path);
-                const resp = await fetch(url, { headers: { 'Authorization': `token ${token}` } });
-                if (!resp.ok) throw new Error('获取文件失败');
-                return resp.blob();
+            async function deleteFileViaFunction(path, password) {
+                const resp = await fetch(`${API_BASE}/delete`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ path, password })
+                });
+                if (!resp.ok) {
+                    const err = await resp.json().catch(() => ({}));
+                    throw new Error(err.error || `删除失败 (${resp.status})`);
+                }
+                return resp.json();
             }
 
             // ============================================================
-            //  核心：加载目录 (基于 Release 资产)
+            //  核心：加载目录（基于缓存 allAssets）
             // ============================================================
             async function loadDirectory(path) {
-                if (!token) {
-                    fileListEl.innerHTML = `<div class="empty-state"><i class="fas fa-key"></i><p>请先输入 Token 并连接</p></div>`;
-                    return;
-                }
                 const cleanPath = sanitizePath(path);
                 currentPath = cleanPath;
                 pathDisplay.textContent = cleanPath;
 
                 try {
-                    const assets = await fetchAssets();
-                    // 过滤出文件（资产名是完整路径）
-                    // 构建树结构
-                    const items = [];
-                    const folderSet = new Set();
+                    // 获取最新资产列表
+                    allAssets = await fetchList();
+                    // 构建当前路径下的目录结构
+                    const prefix = cleanPath === '/' ? '' : cleanPath.slice(1) + '/';
+                    const foldersSet = new Set();
+                    const children = [];
 
-                    // 先提取所有文件路径
-                    const filePaths = assets.map(a => a.name).filter(name => name !== '');
-
-                    // 收集所有目录
-                    for (const fp of filePaths) {
-                        const parts = fp.split('/').filter(Boolean);
-                        let current = '';
-                        for (let i = 0; i < parts.length - 1; i++) {
-                            current = (current ? current + '/' : '') + parts[i];
-                            folderSet.add(current);
+                    // 收集所有路径
+                    for (const asset of allAssets) {
+                        const name = asset.name;
+                        if (!name.startsWith(prefix)) continue;
+                        const relative = name.slice(prefix.length);
+                        if (!relative) continue;
+                        // 如果包含 '/'，说明是子文件夹内的文件
+                        if (relative.includes('/')) {
+                            const folderName = relative.split('/')[0];
+                            foldersSet.add(folderName);
+                        } else {
+                            // 直接文件
+                            children.push({
+                                name: relative,
+                                path: name,
+                                size: asset.size,
+                                download_url: asset.download_url,
+                                type: 'file'
+                            });
                         }
                     }
 
-                    // 构建当前路径下的文件/文件夹
-                    const prefix = cleanPath === '/' ? '' : cleanPath.slice(1) + '/';
-                    const children = [];
+                    // 文件夹列表
+                    const folderItems = Array.from(foldersSet).map(name => ({
+                        name: name,
+                        path: prefix + name,
+                        type: 'dir',
+                        size: 0,
+                        download_url: null
+                    }));
 
-                    for (const fp of filePaths) {
-                        if (!fp.startsWith(prefix)) continue;
-                        const relative = fp.slice(prefix.length);
-                        if (!relative) continue;
-                        // 如果包含 '/'，说明是子文件夹内的文件，忽略，由文件夹递归展示
-                        if (relative.includes('/')) continue;
-                        // 否则是当前目录下的文件
-                        children.push({ name: relative, path: fp, size: assets.find(a => a.name === fp).size, type: 'file' });
-                    }
+                    // 排序
+                    folderItems.sort((a, b) => a.name.localeCompare(b.name));
+                    children.sort((a, b) => a.name.localeCompare(b.name));
 
-                    // 文件夹：从 folderSet 中过滤出当前路径下的直接子文件夹
-                    const subFolders = [];
-                    for (const f of folderSet) {
-                        if (!f.startsWith(prefix)) continue;
-                        const relative = f.slice(prefix.length);
-                        if (!relative || relative.includes('/')) continue;
-                        subFolders.push({ name: relative, path: f, type: 'dir' });
-                    }
-
-                    // 合并并排序
-                    const sortedFolders = subFolders.sort((a, b) => a.name.localeCompare(b.name));
-                    const sortedFiles = children.sort((a, b) => a.name.localeCompare(b.name));
-                    const all = [...sortedFolders, ...sortedFiles];
-                    fileList = all;
-                    renderFileList(all, cleanPath);
+                    const items = [...folderItems, ...children];
+                    renderFileList(items, cleanPath);
                 } catch (err) {
                     console.error(err);
-                    fileListEl.innerHTML = `<div class="empty-state"><i class="fas fa-exclamation-triangle" style="color:#cf222e;"></i><p>加载失败: ${err.message}</p></div>`;
+                    fileListEl.innerHTML = `
+                        <div class="empty-state">
+                            <i class="fas fa-exclamation-triangle" style="color:#cf222e;"></i>
+                            <p>加载失败: ${err.message}</p>
+                        </div>
+                    `;
                     showToast('加载失败: ' + err.message, 'error');
                 }
             }
@@ -502,19 +1068,26 @@
             // ============================================================
             function renderFileList(items, path) {
                 if (!items || items.length === 0) {
-                    fileListEl.innerHTML = `<div class="empty-state"><i class="fas fa-folder-open"></i><p>此文件夹为空</p></div>`;
+                    fileListEl.innerHTML = `
+                        <div class="empty-state">
+                            <i class="fas fa-folder-open"></i>
+                            <p>此文件夹为空</p>
+                            <p style="font-size:13px;color:#8d96a0;margin-top:4px;">点击「新建文件夹」或拖拽文件上传</p>
+                        </div>
+                    `;
                     return;
                 }
+
                 let html = '';
                 for (const item of items) {
-                    const isFolder = item.type === 'dir';
+                    const isFolder = (item.type === 'dir');
                     const name = item.name;
                     const size = item.size || 0;
                     const typeName = getTypeName(name, isFolder);
                     const iconHtml = getIconHtml(name, isFolder);
                     const sizeStr = isFolder ? '—' : formatSize(size);
                     const ext = getExtension(name);
-                    const extBadge = ext ? `<span class="ext-badge" style="font-size:11px;background:#eaeef2;padding:0 8px;border-radius:12px;color:#57606a;">.${ext}</span>` : '';
+                    const extBadge = ext ? `<span class="ext-badge">.${ext}</span>` : '';
 
                     let actionsHtml = '';
                     if (isFolder) {
@@ -522,13 +1095,19 @@
                     } else {
                         const canPrev = canPreview(name);
                         if (canPrev) {
-                            actionsHtml += `<button class="btn-sm primary" data-action="preview" data-path="${item.path}" data-name="${name}"><i class="fas fa-eye"></i> <span>预览</span></button>`;
+                            actionsHtml +=
+                                `<button class="btn-sm primary" data-action="preview" data-path="${item.path}" data-name="${name}"><i class="fas fa-eye"></i> <span>预览</span></button>`;
                         }
-                        actionsHtml += `<button class="btn-sm" data-action="download" data-path="${item.path}" data-name="${name}"><i class="fas fa-download"></i> <span>下载</span></button>`;
+                        actionsHtml +=
+                            `<button class="btn-sm" data-action="download" data-path="${item.path}" data-name="${name}" data-url="${item.download_url || ''}"><i class="fas fa-download"></i> <span>下载</span></button>`;
+                        // 删除按钮
+                        actionsHtml +=
+                            `<button class="btn-sm danger" data-action="delete" data-path="${item.path}" data-name="${name}"><i class="fas fa-trash"></i> <span>删除</span></button>`;
                     }
 
                     const rowClass = isFolder ? 'file-item is-folder' : 'file-item';
                     const clickAttr = isFolder ? `data-folder="${item.path}"` : '';
+
                     html += `
                         <div class="${rowClass}" ${clickAttr}>
                             <div class="icon">${iconHtml}</div>
@@ -539,30 +1118,48 @@
                         </div>
                     `;
                 }
+
                 fileListEl.innerHTML = html;
 
-                // 事件绑定
+                // 事件绑定：点击文件夹
                 fileListEl.querySelectorAll('.file-item.is-folder').forEach(el => {
                     el.addEventListener('click', function(e) {
                         if (e.target.closest('.actions')) return;
                         const folderPath = this.dataset.folder;
-                        if (folderPath) navigateTo(folderPath);
+                        if (folderPath) {
+                            navigateTo(folderPath);
+                        }
                     });
                 });
+
+                // 预览
                 fileListEl.querySelectorAll('[data-action="preview"]').forEach(btn => {
                     btn.addEventListener('click', function(e) {
                         e.stopPropagation();
-                        const path = this.dataset.path,
-                            name = this.dataset.name;
+                        const path = this.dataset.path;
+                        const name = this.dataset.name;
                         if (path) handlePreview(path, name);
                     });
                 });
+
+                // 下载
                 fileListEl.querySelectorAll('[data-action="download"]').forEach(btn => {
                     btn.addEventListener('click', function(e) {
                         e.stopPropagation();
-                        const path = this.dataset.path,
-                            name = this.dataset.name;
-                        if (path) handleDownload(path, name);
+                        const url = this.dataset.url;
+                        const name = this.dataset.name;
+                        if (url) handleDownload(url, name);
+                        else showToast('下载链接无效', 'error');
+                    });
+                });
+
+                // 删除
+                fileListEl.querySelectorAll('[data-action="delete"]').forEach(btn => {
+                    btn.addEventListener('click', function(e) {
+                        e.stopPropagation();
+                        const path = this.dataset.path;
+                        const name = this.dataset.name;
+                        if (path) handleDelete(path, name);
                     });
                 });
             }
@@ -572,23 +1169,31 @@
             // ============================================================
             function navigateTo(path) {
                 const clean = sanitizePath(path);
-                if (clean !== currentPath) loadDirectory(clean);
+                if (clean !== currentPath) {
+                    loadDirectory(clean);
+                }
             }
 
             // ============================================================
-            //  新建文件夹 (通过上传一个 .gitkeep 文件)
+            //  新建文件夹（通过上传空的 .gitkeep）
             // ============================================================
             async function createFolder(folderName) {
-                if (!folderName || folderName.trim() === '') { showToast('请输入文件夹名称', 'error'); return; }
+                if (!folderName || folderName.trim() === '') {
+                    showToast('请输入文件夹名称', 'error');
+                    return;
+                }
                 const name = folderName.trim();
-                if (/[\/:*?"<>|\\]/.test(name)) { showToast('文件夹名称包含非法字符', 'error'); return; }
+                if (/[\/:*?"<>|\\]/.test(name)) {
+                    showToast('文件夹名称包含非法字符', 'error');
+                    return;
+                }
                 const folderPath = currentPath === '/' ? `/${name}` : `${currentPath}/${name}`;
                 const keepPath = folderPath === '/' ? '.gitkeep' : `${folderPath.slice(1)}/.gitkeep`;
 
                 try {
-                    // 创建一个空的 Blob 作为 .gitkeep
-                    const emptyFile = new Blob([], { type: 'text/plain' });
-                    await uploadAsset(emptyFile, keepPath);
+                    // 空 base64 (空文件)
+                    const emptyBase64 = '';
+                    await uploadFileViaFunction(keepPath, emptyBase64);
                     showToast(`文件夹 "${name}" 创建成功`, 'success');
                     newFolderDialog.classList.remove('active');
                     loadDirectory(currentPath);
@@ -601,134 +1206,204 @@
             //  上传文件
             // ============================================================
             async function uploadFiles(files) {
-                if (!token) { showToast('请先连接 Token', 'error'); return; }
                 if (!files || files.length === 0) return;
-                let success = 0,
-                    failed = 0;
+
+                let success = 0;
+                let failed = 0;
+
                 for (const file of files) {
                     try {
-                        const path = currentPath === '/' ? file.name : `${currentPath.slice(1)}/${file.name}`;
-                        await uploadAsset(file, path);
+                        const reader = new FileReader();
+                        const base64 = await new Promise((resolve, reject) => {
+                            reader.onload = () => {
+                                // 去掉 data:xxx;base64, 前缀
+                                const raw = reader.result.split(',')[1] || reader.result;
+                                resolve(raw);
+                            };
+                            reader.onerror = reject;
+                            reader.readAsDataURL(file);
+                        });
+
+                        const targetPath = currentPath === '/' ? file.name : `${currentPath.slice(1)}/${file.name}`;
+                        await uploadFileViaFunction(targetPath, base64);
                         success++;
                     } catch (err) {
                         failed++;
-                        console.error(err);
+                        console.error(`上传 ${file.name} 失败:`, err);
                         showToast(`上传失败: ${file.name} — ${err.message}`, 'error');
                     }
                 }
+
                 if (success > 0) {
                     showToast(`成功上传 ${success} 个文件${failed > 0 ? `，${failed} 个失败` : ''}`, success === files.length ? 'success' :
                         'info');
                     loadDirectory(currentPath);
-                } else {
+                } else if (failed > 0) {
                     showToast(`上传失败 ${failed} 个文件`, 'error');
                 }
             }
 
             // ============================================================
-            //  预览 & 下载
+            //  预览
             // ============================================================
             async function handlePreview(path, name) {
-                if (!token) { showToast('请先连接 Token', 'error'); return; }
                 try {
-                    const content = await fetchRawContent(path);
+                    // 从 allAssets 中找下载链接
+                    const asset = allAssets.find(a => a.name === path);
+                    if (!asset) {
+                        showToast('未找到文件', 'error');
+                        return;
+                    }
+                    const url = asset.download_url;
+                    const resp = await fetch(url);
+                    if (!resp.ok) throw new Error('获取内容失败');
+                    const content = await resp.text();
+
                     const info = getFileType(name);
                     const ext = getExtension(name);
                     const isImage = ['jpg', 'jpeg', 'png', 'gif', 'svg', 'webp', 'bmp', 'ico'].includes(ext);
+
                     previewTitle.innerHTML = `<i class="${info.icon}"></i> ${name}`;
-                    previewData = { path, name, content };
                     let bodyHtml = '';
                     if (isImage) {
-                        const dataUri = `data:image/${ext === 'svg' ? 'svg+xml' : ext};base64,${btoa(content)}`;
-                        bodyHtml = `<img src="${dataUri}" alt="${name}" />`;
+                        // 直接使用图片 URL
+                        bodyHtml = `<img src="${url}" alt="${name}" />`;
                     } else {
                         bodyHtml = `<pre style="margin:0;font-family:inherit;white-space:pre-wrap;word-break:break-word;">${escapeHtml(content)}</pre>`;
                     }
                     previewBody.innerHTML = bodyHtml;
                     previewModal.classList.add('active');
+                    // 保存当前预览路径供下载按钮使用
+                    previewModal.dataset.path = path;
                 } catch (err) {
                     showToast('预览失败: ' + err.message, 'error');
                 }
             }
 
-            async function handleDownload(path, name) {
-                if (!token) { showToast('请先连接 Token', 'error'); return; }
-                try {
-                    const blob = await fetchRawBlob(path);
-                    const url = URL.createObjectURL(blob);
-                    const a = document.createElement('a');
-                    a.href = url;
-                    a.download = name;
-                    document.body.appendChild(a);
-                    a.click();
-                    document.body.removeChild(a);
-                    URL.revokeObjectURL(url);
-                } catch (err) {
-                    showToast('下载失败: ' + err.message, 'error');
-                }
+            // ============================================================
+            //  下载（直接使用下载链接）
+            // ============================================================
+            function handleDownload(url, name) {
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = name;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
             }
 
             // ============================================================
-            //  Token 管理
+            //  删除（需要管理员密码）
             // ============================================================
-            function setToken(newToken) {
-                token = newToken.trim();
-                if (token) {
-                    localStorage.setItem('gh_token', token);
-                    tokenStatus.style.display = 'flex';
-                    tokenStatus.className = 'token-status';
-                    tokenStatus.innerHTML = '<i class="fas fa-check-circle"></i> 已连接';
-                    showToast('Token 已连接', 'success');
-                    // 重置 releaseId 以便重新获取
-                    releaseId = null;
+            async function handleDelete(path, name) {
+                const password = prompt('请输入管理员密码以删除文件：');
+                if (password === null) return; // 取消
+                if (!password.trim()) {
+                    showToast('密码不能为空', 'error');
+                    return;
+                }
+                try {
+                    await deleteFileViaFunction(path, password.trim());
+                    showToast(`文件 "${name}" 已删除`, 'success');
                     loadDirectory(currentPath);
-                } else {
-                    localStorage.removeItem('gh_token');
-                    tokenStatus.style.display = 'none';
-                    showToast('Token 已清除', 'info');
+                } catch (err) {
+                    showToast('删除失败: ' + err.message, 'error');
                 }
             }
 
             // ============================================================
             //  事件绑定
             // ============================================================
-            connectBtn.addEventListener('click', () => { const v = tokenInput.value.trim(); if (v) setToken(v);
-                else showToast('请输入 Token', 'error'); });
-            tokenInput.addEventListener('keydown', e => { if (e.key === 'Enter') connectBtn.click(); });
+
+            // 刷新
             refreshBtn.addEventListener('click', () => loadDirectory(currentPath));
-            newFolderBtn.addEventListener('click', () => { if (!token) { showToast('请先连接 Token', 'error'); return; }
+
+            // 新建文件夹
+            newFolderBtn.addEventListener('click', () => {
                 newFolderDialog.classList.add('active');
                 folderNameInput.value = '';
-                setTimeout(() => folderNameInput.focus(), 100); });
-            dialogCancelBtn.addEventListener('click', () => newFolderDialog.classList.remove('active'));
-            dialogConfirmBtn.addEventListener('click', () => { const name = folderNameInput.value.trim(); if (name)
-                createFolder(name);
-                else showToast('请输入文件夹名称', 'error'); });
-            folderNameInput.addEventListener('keydown', e => { if (e.key === 'Enter') dialogConfirmBtn.click(); if (e.key ===
-                    'Escape') dialogCancelBtn.click(); });
-            newFolderDialog.addEventListener('click', e => { if (e.target === e.currentTarget) newFolderDialog.classList.remove(
-                    'active'); });
+                setTimeout(() => folderNameInput.focus(), 100);
+            });
 
-            dropZone.addEventListener('click', e => { if (!e.target.closest('input')) fileInput.click(); });
-            fileInput.addEventListener('change', function() { if (this.files.length) { uploadFiles(this.files);
-                    this.value = ''; } });
-            dropZone.addEventListener('dragover', e => { e.preventDefault();
-                dropZone.classList.add('drag-over'); });
-            dropZone.addEventListener('dragleave', e => { e.preventDefault();
-                dropZone.classList.remove('drag-over'); });
-            dropZone.addEventListener('drop', e => { e.preventDefault();
-                dropZone.classList.remove('drag-over'); const files = e.dataTransfer.files; if (files.length)
-                    uploadFiles(files); });
+            dialogCancelBtn.addEventListener('click', () => {
+                newFolderDialog.classList.remove('active');
+            });
 
-            function closePreview() { previewModal.classList.remove('active');
-                previewData = null; }
+            dialogConfirmBtn.addEventListener('click', () => {
+                const name = folderNameInput.value.trim();
+                if (name) createFolder(name);
+                else showToast('请输入文件夹名称', 'error');
+            });
+
+            folderNameInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') dialogConfirmBtn.click();
+                if (e.key === 'Escape') dialogCancelBtn.click();
+            });
+
+            newFolderDialog.addEventListener('click', (e) => {
+                if (e.target === e.currentTarget) newFolderDialog.classList.remove('active');
+            });
+
+            // 上传
+            dropZone.addEventListener('click', (e) => {
+                if (e.target.closest('input')) return;
+                fileInput.click();
+            });
+
+            fileInput.addEventListener('change', function() {
+                if (this.files && this.files.length > 0) {
+                    uploadFiles(this.files);
+                    this.value = '';
+                }
+            });
+
+            dropZone.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                dropZone.classList.add('drag-over');
+            });
+
+            dropZone.addEventListener('dragleave', (e) => {
+                e.preventDefault();
+                dropZone.classList.remove('drag-over');
+            });
+
+            dropZone.addEventListener('drop', (e) => {
+                e.preventDefault();
+                dropZone.classList.remove('drag-over');
+                const files = e.dataTransfer.files;
+                if (files && files.length > 0) {
+                    uploadFiles(files);
+                }
+            });
+
+            // 预览模态框关闭
+            function closePreview() {
+                previewModal.classList.remove('active');
+                delete previewModal.dataset.path;
+            }
             previewCloseBtn.addEventListener('click', closePreview);
             previewCloseBtn2.addEventListener('click', closePreview);
-            previewModal.addEventListener('click', e => { if (e.target === e.currentTarget) closePreview(); });
-            previewDownloadBtn.addEventListener('click', () => { if (previewData) handleDownload(previewData.path,
-                    previewData.name); });
+            previewModal.addEventListener('click', (e) => {
+                if (e.target === e.currentTarget) closePreview();
+            });
 
-            document.addEventListener('keydown', e => {
+            // 预览中的下载按钮
+            previewDownloadBtn.addEventListener('click', function() {
+                const path = previewModal.dataset.path;
+                if (!path) {
+                    showToast('无法获取文件路径', 'error');
+                    return;
+                }
+                const asset = allAssets.find(a => a.name === path);
+                if (asset) {
+                    handleDownload(asset.download_url, asset.name);
+                } else {
+                    showToast('文件信息丢失', 'error');
+                }
+            });
+
+            // ESC 关闭
+            document.addEventListener('keydown', (e) => {
                 if (e.key === 'Escape') {
                     if (previewModal.classList.contains('active')) closePreview();
                     if (newFolderDialog.classList.contains('active')) newFolderDialog.classList.remove('active');
@@ -738,15 +1413,7 @@
             // ============================================================
             //  初始化
             // ============================================================
-            function init() {
-                const saved = localStorage.getItem('gh_token');
-                if (saved) { tokenInput.value = saved;
-                    setToken(saved); } else {
-                    fileListEl.innerHTML = `<div class="empty-state"><i class="fas fa-key"></i><p>请输入 GitHub Token 并连接</p></div>`;
-                    pathDisplay.textContent = '/';
-                }
-            }
-            init();
+            loadDirectory('/');
         })();
     </script>
 </body>
