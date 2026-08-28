@@ -1005,27 +1005,34 @@
                 const cleanPath = sanitizePath(path);
                 currentPath = cleanPath;
                 pathDisplay.textContent = cleanPath;
-
+            
                 try {
-                    // 获取最新资产列表
                     allAssets = await fetchList();
-                    // 构建当前路径下的目录结构
                     const prefix = cleanPath === '/' ? '' : cleanPath.slice(1) + '/';
                     const foldersSet = new Set();
                     const children = [];
-
-                    // 收集所有路径
+            
                     for (const asset of allAssets) {
                         const name = asset.name;
                         if (!name.startsWith(prefix)) continue;
                         const relative = name.slice(prefix.length);
                         if (!relative) continue;
-                        // 如果包含 '/'，说明是子文件夹内的文件
+            
+                        // 检查是否是 .gitkeep 文件
+                        if (relative.endsWith('.gitkeep')) {
+                            // 提取文件夹路径
+                            const folderPath = relative.replace('/.gitkeep', '');
+                            if (folderPath && !folderPath.includes('/')) {
+                                foldersSet.add(folderPath);
+                            }
+                            continue;
+                        }
+            
+                        // 普通文件处理
                         if (relative.includes('/')) {
                             const folderName = relative.split('/')[0];
                             foldersSet.add(folderName);
                         } else {
-                            // 直接文件
                             children.push({
                                 name: relative,
                                 path: name,
@@ -1035,8 +1042,8 @@
                             });
                         }
                     }
-
-                    // 文件夹列表
+            
+                    // 构建文件夹列表
                     const folderItems = Array.from(foldersSet).map(name => ({
                         name: name,
                         path: prefix + name,
@@ -1044,11 +1051,10 @@
                         size: 0,
                         download_url: null
                     }));
-
-                    // 排序
+            
                     folderItems.sort((a, b) => a.name.localeCompare(b.name));
                     children.sort((a, b) => a.name.localeCompare(b.name));
-
+            
                     const items = [...folderItems, ...children];
                     renderFileList(items, cleanPath);
                 } catch (err) {
@@ -1247,39 +1253,48 @@
             //  预览
             // ============================================================
             async function handlePreview(path, name) {
-              try {
-                // 通过 Function 代理获取内容
-                const resp = await fetch(`${API_BASE}/preview?path=${encodeURIComponent(path)}`);
-                if (!resp.ok) {
-                  const err = await resp.json().catch(() => ({}));
-                  throw new Error(err.error || `预览失败 (${resp.status})`);
-                }
-                const data = await resp.json();
-                const content = data.content;
+                try {
+                    const asset = allAssets.find(a => a.name === path);
+                    if (!asset) {
+                        showToast('未找到文件', 'error');
+                        return;
+                    }
             
-                const info = getFileType(name);
-                const ext = getExtension(name);
-                const isImage = ['jpg', 'jpeg', 'png', 'gif', 'svg', 'webp', 'bmp', 'ico'].includes(ext);
+                    const info = getFileType(name);
+                    const ext = getExtension(name);
+                    const isImage = ['jpg', 'jpeg', 'png', 'gif', 'svg', 'webp', 'bmp', 'ico'].includes(ext);
             
-                previewTitle.innerHTML = `<i class="${info.icon}"></i> ${name}`;
-                let bodyHtml = '';
-                if (isImage) {
-                  // 图片直接使用下载链接显示（无需代理）
-                  const asset = allAssets.find(a => a.name === path);
-                  if (asset) {
-                    bodyHtml = `<img src="${asset.download_url}" alt="${name}" />`;
-                  } else {
-                    bodyHtml = `<div class="preview-fallback">无法获取图片链接</div>`;
-                  }
-                } else {
-                  bodyHtml = `<pre style="margin:0;font-family:inherit;white-space:pre-wrap;word-break:break-word;">${escapeHtml(content)}</pre>`;
+                    previewTitle.innerHTML = `<i class="${info.icon}"></i> ${name}`;
+            
+                    if (isImage) {
+                        // 图片直接使用 GitHub 下载链接
+                        previewBody.innerHTML = `<img src="${asset.download_url}" alt="${name}" style="max-width:100%;" />`;
+                    } else {
+                        // 文本/代码类通过 Function 代理获取
+                        const resp = await fetch(`${API_BASE}/preview?path=${encodeURIComponent(path)}`);
+                        if (!resp.ok) {
+                            const err = await resp.json().catch(() => ({}));
+                            throw new Error(err.error || `预览失败 (${resp.status})`);
+                        }
+                        const data = await resp.json();
+                        // 注意：preview.js 现在返回的是 Base64，但文本内容我们可以直接用
+                        // 但为了兼容，我们直接请求文本内容
+                        // 更好：在 preview.js 中对文本类型返回纯文本，对图片返回二进制
+                        // 这里简化处理：对图片用 download_url，对文本用 Function
+                        const textResp = await fetch(`${API_BASE}/preview?path=${encodeURIComponent(path)}`);
+                        const textData = await textResp.json();
+                        // 如果返回的是 Base64，需要解码
+                        let content = textData.content || '';
+                        if (textData.isBase64Encoded) {
+                            content = atob(textData.content);
+                        }
+                        previewBody.innerHTML = `<pre style="margin:0;font-family:inherit;white-space:pre-wrap;word-break:break-word;">${escapeHtml(content)}</pre>`;
+                    }
+                    previewModal.classList.add('active');
+                    previewModal.dataset.path = path;
+                } catch (err) {
+                    showToast('预览失败: ' + err.message, 'error');
                 }
-                previewBody.innerHTML = bodyHtml;
-                previewModal.classList.add('active');
-                previewModal.dataset.path = path;
-              } catch (err) {
-                showToast('预览失败: ' + err.message, 'error');
-              }
             }
             // ============================================================
             //  下载（直接使用下载链接）
