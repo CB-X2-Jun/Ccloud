@@ -1,15 +1,15 @@
-// utils.js 可单独提取，但为减少文件，这里在每个函数中复制基础工具函数
+// netlify/functions/upload.js
+const { getOrCreateRelease, getAssets, getHeaders, REPO_OWNER, REPO_NAME, UPLOAD_BASE } = require('./_utils'); // 如果有工具文件，按需引入
+// 如果还没有工具文件，也可以直接将下面代码中的工具函数内联（为简便，我给出完整的独立实现）
 
+// 为了方便，这里将必要的工具函数内联（您也可以提取到 _utils.js）
 const REPO_OWNER = process.env.REPO_OWNER || 'CB-X2-Jun';
 const REPO_NAME = process.env.REPO_NAME || 'Ccloud-files';
 const RELEASE_TAG = process.env.RELEASE_TAG || 'cloud-files';
 const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
-
 const API_BASE = 'https://api.github.com';
 const UPLOAD_BASE = 'https://uploads.github.com';
 
-// 通用请求头
 function getHeaders(additional = {}) {
   return {
     'Authorization': `token ${GITHUB_TOKEN}`,
@@ -18,7 +18,6 @@ function getHeaders(additional = {}) {
   };
 }
 
-// 获取或创建 Release（返回 release id）
 async function getOrCreateRelease() {
   const url = `${API_BASE}/repos/${REPO_OWNER}/${REPO_NAME}/releases/tags/${RELEASE_TAG}`;
   let resp = await fetch(url, { headers: getHeaders() });
@@ -40,12 +39,14 @@ async function getOrCreateRelease() {
     headers: getHeaders({ 'Content-Type': 'application/json' }),
     body: JSON.stringify(body)
   });
-  if (!resp.ok) throw new Error('创建 Release 失败');
+  if (!resp.ok) {
+    const err = await resp.json();
+    throw new Error(err.message || '创建 Release 失败');
+  }
   const data = await resp.json();
   return data.id;
 }
 
-// 获取所有资产
 async function getAssets() {
   const releaseId = await getOrCreateRelease();
   const url = `${API_BASE}/repos/${REPO_OWNER}/${REPO_NAME}/releases/${releaseId}/assets`;
@@ -54,26 +55,24 @@ async function getAssets() {
   return resp.json();
 }
 
-// netlify/functions/upload.js
-// const { getOrCreateRelease, getAssets } = require('./_utils'); // 如果提取了工具，否则直接复制
-
+// 主处理函数
 exports.handler = async (event) => {
+  // 只接受 POST
   if (event.httpMethod !== 'POST') {
-    return { statusCode: 405, body: 'Method Not Allowed' };
+    return { statusCode: 405, body: JSON.stringify({ error: 'Method Not Allowed' }) };
   }
 
   try {
-    // 解析 multipart/form-data
-    const form = await parseMultipart(event); // 需要自己实现或使用 busboy
-    // 为了简化，这里假设前端将文件作为 base64 发送（推荐用二进制上传，但 Netlify Functions 处理 multipart 较复杂）
-    // 我提供一个更简单的方式：前端将文件转为 base64，通过 JSON 发送
+    // 解析 JSON 请求体
     const { path, content } = JSON.parse(event.body);
-    // 注意：path 是完整路径（如 'folder/file.txt'）
-    // content 是 base64 编码的文件内容
+    if (!path || content === undefined) {
+      return { statusCode: 400, body: JSON.stringify({ error: '缺少 path 或 content 字段' }) };
+    }
 
+    // 获取 Release ID
     const releaseId = await getOrCreateRelease();
 
-    // 检查是否存在同路径资产，若存在则删除
+    // 检查是否存在同名资产，存在则先删除
     const assets = await getAssets();
     const exist = assets.find(a => a.name === path);
     if (exist) {
@@ -83,31 +82,38 @@ exports.handler = async (event) => {
       });
     }
 
-    // 上传新资产
-    const uploadUrl = `${UPLOAD_BASE}/repos/${REPO_OWNER}/${REPO_NAME}/releases/${releaseId}/assets?name=${encodeURIComponent(path)}`;
-    // 需要将 base64 转为 Buffer 并作为 multipart 发送，用 FormData
-    const formData = new FormData();
+    // 准备上传：将 base64 转为 Buffer，并构造 FormData
     const buffer = Buffer.from(content, 'base64');
+    const formData = new FormData();
+    // 添加文件，注意：GitHub Release 上传需要文件名（即 path）
     formData.append('file', new Blob([buffer]), path);
+
+    const uploadUrl = `${UPLOAD_BASE}/repos/${REPO_OWNER}/${REPO_NAME}/releases/${releaseId}/assets?name=${encodeURIComponent(path)}`;
 
     const resp = await fetch(uploadUrl, {
       method: 'POST',
       headers: {
         ...getHeaders(),
-        // 不要设置 Content-Type，让浏览器自动设置为 multipart/form-data
+        // 注意：不要手动设置 Content-Type，让浏览器自动设置为 multipart/form-data
       },
       body: formData
     });
+
     if (!resp.ok) {
       const errText = await resp.text();
-      throw new Error(`上传失败: ${resp.status} ${errText}`);
+      throw new Error(`上传失败 (${resp.status}): ${errText}`);
     }
+
     const data = await resp.json();
     return {
       statusCode: 200,
       body: JSON.stringify({ success: true, asset: data })
     };
   } catch (err) {
-    return { statusCode: 500, body: JSON.stringify({ error: err.message }) };
+    console.error('Upload error:', err);
+    return {
+      statusCode: 500,
+      body: JSON.stringify({ error: err.message })
+    };
   }
 };
