@@ -86,7 +86,8 @@ exports.handler = async (event) => {
     const buffer = Buffer.from(content, 'base64');
     const formData = new FormData();
     // 添加文件，注意：GitHub Release 上传需要文件名（即 path）
-    formData.append('file', new Blob([buffer]), path);
+    const encodedName = encodeURIComponent(path);
+    formData.append('file', new Blob([buffer]), encodedName);
 
     const uploadUrl = `${UPLOAD_BASE}/repos/${REPO_OWNER}/${REPO_NAME}/releases/${releaseId}/assets?name=${encodeURIComponent(path)}`;
 
