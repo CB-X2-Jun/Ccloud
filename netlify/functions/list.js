@@ -51,11 +51,9 @@ async function getAssets() {
 exports.handler = async (event) => {
   try {
     const assets = await getAssets();
-    // 在 list.js 的 map 中
     const list = assets.map(a => {
         let name = a.name;
         if (name.startsWith('/')) name = name.slice(1);
-        // 解码 URL 编码的文件名
         try {
             name = decodeURIComponent(name);
         } catch (_) { /* 解码失败则保持原样 */ }
@@ -66,6 +64,11 @@ exports.handler = async (event) => {
                 `https://github.com/${REPO_OWNER}/${REPO_NAME}/releases/download/${RELEASE_TAG}/${encodeURIComponent(a.name)}`
         };
     });
+    // ✅ 加上 return 语句，返回正确的 HTTP 响应
+    return {
+      statusCode: 200,
+      body: JSON.stringify({ items: list })
+    };
   } catch (err) {
     return { statusCode: 500, body: JSON.stringify({ error: err.message }) };
   }
